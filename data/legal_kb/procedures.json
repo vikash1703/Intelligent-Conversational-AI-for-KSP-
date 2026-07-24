@@ -1,0 +1,182 @@
+[
+  {
+    "concept": "FIR (First Information Report)",
+    "aliases": [
+      "fir",
+      "first information report"
+    ],
+    "plain_language_explanation": "An FIR is the written record a police station prepares when it first receives information about the commission of a cognizable offence (Section 154 CrPC / Section 173 BNSS). It sets the criminal investigation in motion — the informant's statement is recorded, read back to them, signed, and a copy is given to them free of cost. An FIR can only be registered for a cognizable offence; for a non-cognizable offence, the police record it in a different register (the NC/non-cognizable report) and cannot investigate without a magistrate's order."
+  },
+  {
+    "concept": "Zero FIR",
+    "aliases": [
+      "zero fir"
+    ],
+    "plain_language_explanation": "A Zero FIR is an FIR registered by any police station, regardless of where the offence actually occurred or which station has jurisdiction over that area. It is given a temporary '0' serial number and is later transferred to the police station that does have jurisdiction, which then re-registers it under its own regular serial number. This exists so a victim is never turned away just because they walked into the 'wrong' police station — the police are legally required to register it and forward it, not redirect the complainant elsewhere first."
+  },
+  {
+    "concept": "Chargesheet",
+    "aliases": [
+      "chargesheet",
+      "charge sheet",
+      "final report"
+    ],
+    "plain_language_explanation": "A chargesheet (formally the 'police report' under Section 173 CrPC / Section 193 BNSS) is the final investigation report the police file in court once they complete their investigation. It lists the evidence gathered, the accused persons, and the specific offences the police believe are made out. Filing a chargesheet is what moves a case from the investigation stage to the trial stage before a magistrate/court. If the investigation finds no case is made out, the police instead file a 'B Report' (closure report) rather than a chargesheet."
+  },
+  {
+    "concept": "Cognizable offence",
+    "aliases": [
+      "cognizable",
+      "cognizable offence"
+    ],
+    "plain_language_explanation": "A cognizable offence is one for which the police can arrest a person without a warrant and start an investigation without needing prior permission from a magistrate. These are generally the more serious offences (e.g. murder, rape, robbery). Whether a specific IPC/BNS section is cognizable or not is fixed by the First Schedule to the CrPC (now the BNSS) — it does not depend on the facts of a particular case."
+  },
+  {
+    "concept": "Non-cognizable offence",
+    "aliases": [
+      "non-cognizable",
+      "non cognizable",
+      "noncognizable"
+    ],
+    "plain_language_explanation": "A non-cognizable offence is one for which the police cannot arrest without a warrant, and cannot investigate without a magistrate's permission. These are generally less serious offences (e.g. simple hurt, defamation). A complaint about a non-cognizable offence is recorded by the police in an NC register, but the complainant is directed to approach a magistrate directly if they want an investigation or prosecution to proceed."
+  },
+  {
+    "concept": "Difference between cognizable and non-cognizable offences",
+    "aliases": [
+      "difference between cognizable and non-cognizable",
+      "cognizable vs non-cognizable",
+      "cognizable non cognizable difference"
+    ],
+    "plain_language_explanation": "The core difference is police power to act on their own: for a cognizable offence, the police can arrest without a warrant and start investigating immediately on their own authority (an FIR is registered). For a non-cognizable offence, the police cannot arrest without a warrant and cannot investigate without a magistrate's order — they only record the complaint (as an NC entry) and the complainant must approach a magistrate for the case to move forward. Generally, more serious offences (murder, rape, robbery) are cognizable, and less serious ones (simple hurt, defamation) are non-cognizable — the classification for each section is fixed by the First Schedule to the CrPC/BNSS, not decided case by case."
+  },
+  {
+    "concept": "Bailable offence",
+    "aliases": [
+      "bailable",
+      "bailable offence"
+    ],
+    "plain_language_explanation": "A bailable offence is one where bail is a matter of right — if the accused is willing to furnish bail, the police officer or the court is legally bound to release them. These are generally less serious offences."
+  },
+  {
+    "concept": "Non-bailable offence",
+    "aliases": [
+      "non-bailable",
+      "non bailable",
+      "nonbailable"
+    ],
+    "plain_language_explanation": "A non-bailable offence is one where bail is not a matter of right — it is granted or refused at the discretion of the court, based on factors like the severity of the offence, risk of the accused fleeing or tampering with evidence, and their criminal history. These are generally more serious offences."
+  },
+  {
+    "concept": "Anticipatory bail",
+    "aliases": [
+      "anticipatory bail"
+    ],
+    "plain_language_explanation": "Anticipatory bail (Section 438 CrPC / Section 482 BNSS) is bail sought in advance of arrest, by a person who has reason to believe they may be arrested for a non-bailable offence. If granted by the Sessions Court or High Court, it directs that the person be released on bail if and when they are actually arrested, rather than having to apply for bail only after arrest."
+  },
+  {
+    "concept": "Remand",
+    "aliases": [
+      "remand",
+      "police remand",
+      "judicial remand"
+    ],
+    "plain_language_explanation": "Remand is a magistrate's order sending an arrested person into further custody while the investigation continues, because it cannot be completed within the initial 24-hour period the police are allowed to hold someone without judicial authorization. Remand can be 'police custody' (the accused stays with the police, generally for a limited window early in the investigation) or 'judicial custody' (the accused is sent to jail while the case continues)."
+  },
+  {
+    "concept": "NBW (Non-Bailable Warrant)",
+    "aliases": [
+      "nbw",
+      "non-bailable warrant",
+      "non bailable warrant"
+    ],
+    "plain_language_explanation": "An NBW is a warrant issued by a court directing the police to arrest a person and produce them before the court, without giving the person the option of release on bail at the point of arrest — bail can only be sought afterward, from the court. It's typically issued when a person fails to appear in court despite being summoned, or is deliberately evading appearance."
+  },
+  {
+    "concept": "Bailable warrant",
+    "aliases": [
+      "bailable warrant"
+    ],
+    "plain_language_explanation": "A bailable warrant directs the police to arrest a person, but allows them to be released immediately on furnishing bail (as specified in the warrant) rather than being kept in custody until produced before the court. It is typically used for less serious cases of non-appearance than an NBW."
+  },
+  {
+    "concept": "Panchnama",
+    "aliases": [
+      "panchnama"
+    ],
+    "plain_language_explanation": "A panchnama is a written record, prepared by the investigating officer in the presence of independent local witnesses ('panchas'), documenting what was observed or seized during an investigative act — most commonly a scene-of-crime inspection, a search, or a seizure of property/evidence. The panchas sign the document to independently attest that its contents accurately reflect what took place, which helps the evidence stand up to scrutiny in court."
+  },
+  {
+    "concept": "Panchanama witness",
+    "aliases": [
+      "panch",
+      "panchas",
+      "independent witness"
+    ],
+    "plain_language_explanation": "A 'panch' (plural: panchas) is an independent, disinterested local person the investigating officer brings in to witness and sign a panchnama — their role is to give the record credibility by confirming, from outside the police, that the seizure/inspection happened as documented."
+  },
+  {
+    "concept": "Inquest",
+    "aliases": [
+      "inquest",
+      "inquest report"
+    ],
+    "plain_language_explanation": "An inquest (Section 174 CrPC / Section 194 BNSS) is the police procedure for recording the apparent cause of an unnatural, suicidal, or suspicious death — noting the condition of the body and any marks of injury — before the body is sent for post-mortem examination. It is distinct from a chargesheet; it simply documents the circumstances of the death for the record and to guide further investigation."
+  },
+  {
+    "concept": "Chargesheet types (A, B, C summary)",
+    "aliases": [
+      "cstype",
+      "chargesheet type",
+      "b report",
+      "final report type"
+    ],
+    "plain_language_explanation": "Police investigations typically close in one of a few standard ways: an 'A' final report (a genuine chargesheet — enough evidence found, the case is sent for trial), a 'B' final report (the case is found to be false/mistake of fact, and closed without trial), or a 'C' final report (the offence occurred but the offender could not be traced/identified, so the case is closed as undetected, though it can be reopened if new evidence emerges)."
+  },
+  {
+    "concept": "Cognizance",
+    "aliases": [
+      "cognizance",
+      "taking cognizance"
+    ],
+    "plain_language_explanation": "A magistrate 'takes cognizance' of an offence when they formally apply their judicial mind to the facts of a case (usually on a police report or a private complaint) to decide whether to proceed further, such as issuing process against the accused. This is a distinct legal step from an FIR being registered or an investigation being conducted — it's the point where the matter moves into the court's own hands."
+  },
+  {
+    "concept": "Section 41 CrPC / arrest without warrant",
+    "aliases": [
+      "section 41",
+      "arrest without warrant",
+      "when can police arrest without warrant"
+    ],
+    "plain_language_explanation": "Section 41 CrPC (now Section 35 BNSS) lays out the conditions under which a police officer may arrest a person without a warrant — generally for cognizable offences, or where there is credible information/reasonable suspicion the person committed one, subject to the officer recording their reasons in writing, particularly for offences punishable with up to 7 years."
+  },
+  {
+    "concept": "Complainant vs accused vs victim",
+    "aliases": [
+      "complainant",
+      "difference between complainant and victim",
+      "who is the accused"
+    ],
+    "plain_language_explanation": "The complainant is the person who reports the offence to the police (they may or may not be the victim themselves — e.g. a family member or witness can file the complaint). The victim is the person who actually suffered the harm from the offence. The accused is the person named or identified as having committed the offence; they remain 'accused' — not convicted — until a court finds them guilty at the end of a trial."
+  },
+  {
+    "concept": "Karnataka Police jurisdiction structure",
+    "aliases": [
+      "ksp jurisdiction",
+      "karnataka police jurisdiction",
+      "police jurisdiction structure",
+      "district subdivision circle",
+      "ksp organizational structure",
+      "karnataka police hierarchy"
+    ],
+    "plain_language_explanation": "Karnataka State Police is organized territorially from the state level down: the state is divided into Police Ranges (each headed by an IGP or DIG), Ranges into Districts (headed by a Superintendent of Police, SP, or a Deputy Commissioner of Police in commissionerate cities like Bengaluru), Districts into Sub-Divisions (headed by an ASP or Deputy SP/DCP), Sub-Divisions into Circles (headed by a Circle Inspector), and Circles into individual Police Stations (headed by a Station House Officer, typically an Inspector or Sub-Inspector). The rank hierarchy running through this structure, highest to lowest: DGP (Director General of Police) → IGP (Inspector General) → DIG (Deputy Inspector General) → SP/DCP → ASP/DySP → Inspector → Sub-Inspector → Head Constable/Constable. This dataset's own role-based access (DGP/IGP/SP/Inspector) mirrors this real rank structure, with each rank scoped to progressively narrower data access (state-wide, zone/range, district, station)."
+  },
+  {
+    "concept": "Karnataka Police Act",
+    "aliases": [
+      "karnataka police act",
+      "kp act",
+      "karnataka police act 1963"
+    ],
+    "plain_language_explanation": "The Karnataka Police Act, 1963 is the state legislation governing the constitution, powers, and duties of Karnataka State Police — separate from and in addition to national criminal law (IPC/BNS, CrPC/BNSS). It covers matters like the organization and superintendence of the state police force, the general duties and powers of police officers, regulation of public assemblies and processions, and state-specific offences (e.g. certain public-nuisance and licensing provisions) with their own penalties. For the exact current section numbers and their text, consult the official Karnataka Police Act, 1963 and any subsequent amendments — this summary is a general orientation to what kind of law it is, not a substitute for the statute itself."
+  }
+]

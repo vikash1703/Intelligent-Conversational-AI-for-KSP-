@@ -1,0 +1,450 @@
+[
+  {
+    "ipc_section": "34",
+    "bns_equivalent": "3(5)"
+  },
+  {
+    "ipc_section": "120A",
+    "bns_equivalent": "61(1)"
+  },
+  {
+    "ipc_section": "120B",
+    "bns_equivalent": "61(2)"
+  },
+  {
+    "ipc_section": "109",
+    "bns_equivalent": "45"
+  },
+  {
+    "ipc_section": "511",
+    "bns_equivalent": "62"
+  },
+  {
+    "ipc_section": "141",
+    "bns_equivalent": "189(1)"
+  },
+  {
+    "ipc_section": "143",
+    "bns_equivalent": "189(2)"
+  },
+  {
+    "ipc_section": "146",
+    "bns_equivalent": "191(1)"
+  },
+  {
+    "ipc_section": "147",
+    "bns_equivalent": "191(2)"
+  },
+  {
+    "ipc_section": "148",
+    "bns_equivalent": "191(3)"
+  },
+  {
+    "ipc_section": "149",
+    "bns_equivalent": "190"
+  },
+  {
+    "ipc_section": "182",
+    "bns_equivalent": "217"
+  },
+  {
+    "ipc_section": "186",
+    "bns_equivalent": "221"
+  },
+  {
+    "ipc_section": "191",
+    "bns_equivalent": "227"
+  },
+  {
+    "ipc_section": "201",
+    "bns_equivalent": "238"
+  },
+  {
+    "ipc_section": "212",
+    "bns_equivalent": "249"
+  },
+  {
+    "ipc_section": "299",
+    "bns_equivalent": "100"
+  },
+  {
+    "ipc_section": "300",
+    "bns_equivalent": "101"
+  },
+  {
+    "ipc_section": "302",
+    "bns_equivalent": "103(1)"
+  },
+  {
+    "ipc_section": "304",
+    "bns_equivalent": "105"
+  },
+  {
+    "ipc_section": "304A",
+    "bns_equivalent": "106(1)"
+  },
+  {
+    "ipc_section": "304B",
+    "bns_equivalent": "80(2)"
+  },
+  {
+    "ipc_section": "306",
+    "bns_equivalent": "108"
+  },
+  {
+    "ipc_section": "307",
+    "bns_equivalent": "109"
+  },
+  {
+    "ipc_section": "308",
+    "bns_equivalent": "110"
+  },
+  {
+    "ipc_section": "309",
+    "bns_equivalent": "No general equivalent — BNS narrows this to Section 226 (attempting suicide specifically to compel or restrain a public servant from discharging duty); a plain attempt to suicide is not penalized under BNS"
+  },
+  {
+    "ipc_section": "319",
+    "bns_equivalent": "114"
+  },
+  {
+    "ipc_section": "320",
+    "bns_equivalent": "116"
+  },
+  {
+    "ipc_section": "323",
+    "bns_equivalent": "115(2)"
+  },
+  {
+    "ipc_section": "324",
+    "bns_equivalent": "118(1)"
+  },
+  {
+    "ipc_section": "325",
+    "bns_equivalent": "117(2)"
+  },
+  {
+    "ipc_section": "326",
+    "bns_equivalent": "118(2)"
+  },
+  {
+    "ipc_section": "326A",
+    "bns_equivalent": "124(1)"
+  },
+  {
+    "ipc_section": "326B",
+    "bns_equivalent": "124(2)"
+  },
+  {
+    "ipc_section": "336",
+    "bns_equivalent": "125(a)"
+  },
+  {
+    "ipc_section": "337",
+    "bns_equivalent": "125(b)"
+  },
+  {
+    "ipc_section": "338",
+    "bns_equivalent": "125(b) (aggravated)"
+  },
+  {
+    "ipc_section": "339",
+    "bns_equivalent": "126(1)"
+  },
+  {
+    "ipc_section": "340",
+    "bns_equivalent": "127(1)"
+  },
+  {
+    "ipc_section": "341",
+    "bns_equivalent": "126(2)"
+  },
+  {
+    "ipc_section": "342",
+    "bns_equivalent": "127(2)"
+  },
+  {
+    "ipc_section": "354",
+    "bns_equivalent": "74"
+  },
+  {
+    "ipc_section": "354A",
+    "bns_equivalent": "75"
+  },
+  {
+    "ipc_section": "354B",
+    "bns_equivalent": "76"
+  },
+  {
+    "ipc_section": "354C",
+    "bns_equivalent": "77"
+  },
+  {
+    "ipc_section": "354D",
+    "bns_equivalent": "78"
+  },
+  {
+    "ipc_section": "359",
+    "bns_equivalent": "137(1)"
+  },
+  {
+    "ipc_section": "361",
+    "bns_equivalent": "137(1)(b)"
+  },
+  {
+    "ipc_section": "363",
+    "bns_equivalent": "137(2)"
+  },
+  {
+    "ipc_section": "363A",
+    "bns_equivalent": "139"
+  },
+  {
+    "ipc_section": "364",
+    "bns_equivalent": "138(1)"
+  },
+  {
+    "ipc_section": "364A",
+    "bns_equivalent": "140(1)"
+  },
+  {
+    "ipc_section": "366",
+    "bns_equivalent": "141(1)"
+  },
+  {
+    "ipc_section": "366A",
+    "bns_equivalent": "96"
+  },
+  {
+    "ipc_section": "370",
+    "bns_equivalent": "143"
+  },
+  {
+    "ipc_section": "375",
+    "bns_equivalent": "63"
+  },
+  {
+    "ipc_section": "376",
+    "bns_equivalent": "64"
+  },
+  {
+    "ipc_section": "376A",
+    "bns_equivalent": "66"
+  },
+  {
+    "ipc_section": "376AB",
+    "bns_equivalent": "65(2)"
+  },
+  {
+    "ipc_section": "376D",
+    "bns_equivalent": "70(1)"
+  },
+  {
+    "ipc_section": "377",
+    "bns_equivalent": "No direct equivalent — BNS 2023 omitted this section; non-consensual acts of this nature are addressed via the general sexual-offence provisions"
+  },
+  {
+    "ipc_section": "378",
+    "bns_equivalent": "301(1)"
+  },
+  {
+    "ipc_section": "379",
+    "bns_equivalent": "303(2)"
+  },
+  {
+    "ipc_section": "380",
+    "bns_equivalent": "305(b)"
+  },
+  {
+    "ipc_section": "381",
+    "bns_equivalent": "306"
+  },
+  {
+    "ipc_section": "383",
+    "bns_equivalent": "308(1)"
+  },
+  {
+    "ipc_section": "384",
+    "bns_equivalent": "308(2)"
+  },
+  {
+    "ipc_section": "390",
+    "bns_equivalent": "309(1)-(4)"
+  },
+  {
+    "ipc_section": "392",
+    "bns_equivalent": "309(5)-(6)"
+  },
+  {
+    "ipc_section": "393",
+    "bns_equivalent": "309(7)"
+  },
+  {
+    "ipc_section": "394",
+    "bns_equivalent": "309(4)"
+  },
+  {
+    "ipc_section": "395",
+    "bns_equivalent": "310(2)"
+  },
+  {
+    "ipc_section": "396",
+    "bns_equivalent": "310(3)"
+  },
+  {
+    "ipc_section": "397",
+    "bns_equivalent": "311"
+  },
+  {
+    "ipc_section": "402",
+    "bns_equivalent": "312"
+  },
+  {
+    "ipc_section": "403",
+    "bns_equivalent": "314"
+  },
+  {
+    "ipc_section": "405",
+    "bns_equivalent": "316(1)-(2)"
+  },
+  {
+    "ipc_section": "406",
+    "bns_equivalent": "316(3)"
+  },
+  {
+    "ipc_section": "409",
+    "bns_equivalent": "316(5)"
+  },
+  {
+    "ipc_section": "411",
+    "bns_equivalent": "317(2)"
+  },
+  {
+    "ipc_section": "413",
+    "bns_equivalent": "317(5)"
+  },
+  {
+    "ipc_section": "415",
+    "bns_equivalent": "318(1)-(2)"
+  },
+  {
+    "ipc_section": "417",
+    "bns_equivalent": "318(2)"
+  },
+  {
+    "ipc_section": "418",
+    "bns_equivalent": "318(3)"
+  },
+  {
+    "ipc_section": "419",
+    "bns_equivalent": "319(2)"
+  },
+  {
+    "ipc_section": "420",
+    "bns_equivalent": "318(4)"
+  },
+  {
+    "ipc_section": "425",
+    "bns_equivalent": "324(1)"
+  },
+  {
+    "ipc_section": "426",
+    "bns_equivalent": "324(2)"
+  },
+  {
+    "ipc_section": "427",
+    "bns_equivalent": "324(3)"
+  },
+  {
+    "ipc_section": "435",
+    "bns_equivalent": "324(6)"
+  },
+  {
+    "ipc_section": "447",
+    "bns_equivalent": "329(3)"
+  },
+  {
+    "ipc_section": "448",
+    "bns_equivalent": "329(4)"
+  },
+  {
+    "ipc_section": "449",
+    "bns_equivalent": "331(1)"
+  },
+  {
+    "ipc_section": "450",
+    "bns_equivalent": "331(2)"
+  },
+  {
+    "ipc_section": "454",
+    "bns_equivalent": "331(4)"
+  },
+  {
+    "ipc_section": "457",
+    "bns_equivalent": "331(5)"
+  },
+  {
+    "ipc_section": "463",
+    "bns_equivalent": "335"
+  },
+  {
+    "ipc_section": "464",
+    "bns_equivalent": "336"
+  },
+  {
+    "ipc_section": "465",
+    "bns_equivalent": "336(2)"
+  },
+  {
+    "ipc_section": "467",
+    "bns_equivalent": "338"
+  },
+  {
+    "ipc_section": "468",
+    "bns_equivalent": "336(3)"
+  },
+  {
+    "ipc_section": "471",
+    "bns_equivalent": "340"
+  },
+  {
+    "ipc_section": "494",
+    "bns_equivalent": "82(1)"
+  },
+  {
+    "ipc_section": "498",
+    "bns_equivalent": "84"
+  },
+  {
+    "ipc_section": "498A",
+    "bns_equivalent": "85"
+  },
+  {
+    "ipc_section": "499",
+    "bns_equivalent": "356(1)"
+  },
+  {
+    "ipc_section": "500",
+    "bns_equivalent": "356(2)"
+  },
+  {
+    "ipc_section": "503",
+    "bns_equivalent": "351(1)"
+  },
+  {
+    "ipc_section": "504",
+    "bns_equivalent": "352"
+  },
+  {
+    "ipc_section": "506",
+    "bns_equivalent": "351(2)-(3)"
+  },
+  {
+    "ipc_section": "507",
+    "bns_equivalent": "351(4)"
+  },
+  {
+    "ipc_section": "509",
+    "bns_equivalent": "79"
+  }
+]

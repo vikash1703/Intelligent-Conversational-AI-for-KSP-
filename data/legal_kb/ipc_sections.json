@@ -1,0 +1,1010 @@
+[
+  {
+    "section_no": "34",
+    "title": "Acts done by several persons in furtherance of common intention",
+    "plain_language_summary": "When several people share a common intention to commit a crime and one of them commits the criminal act, every one of them is held liable for that act as if they had each done it personally. It is not a standalone offence — it attaches to whatever offence was actually committed.",
+    "punishment": "Same as the substantive offence committed by the group",
+    "cognizable": "Depends on the underlying offence",
+    "bailable": "Depends on the underlying offence",
+    "bns_equivalent": "3(5)"
+  },
+  {
+    "section_no": "120A",
+    "title": "Definition of criminal conspiracy",
+    "plain_language_summary": "Defines criminal conspiracy as an agreement between two or more persons to do an illegal act, or a legal act by illegal means. This is a definition section — the punishment is in Section 120B.",
+    "punishment": "None (definition only — see 120B)",
+    "cognizable": "N/A (definition section)",
+    "bailable": "N/A (definition section)",
+    "bns_equivalent": "61(1)"
+  },
+  {
+    "section_no": "120B",
+    "title": "Punishment for criminal conspiracy",
+    "plain_language_summary": "Punishes the agreement itself to commit an illegal act, even if the act is never carried out. If the conspiracy is to commit an offence punishable with death, life imprisonment, or rigorous imprisonment of two years or more, it is punished the same as abetting that offence; conspiracies for lesser offences get a lighter punishment.",
+    "punishment": "Same as abetting the planned offence (for serious offences); otherwise up to 6 months, fine, or both",
+    "cognizable": "Depends on the offence conspired for",
+    "bailable": "Depends on the offence conspired for",
+    "bns_equivalent": "61(2)"
+  },
+  {
+    "section_no": "109",
+    "title": "Punishment of abetment if the act abetted is committed",
+    "plain_language_summary": "Punishes a person who abets (instigates, conspires, or intentionally aids) an offence, when that offence actually goes on to be committed as a result — with the same punishment as the offence itself, unless a specific abetment provision says otherwise.",
+    "punishment": "Same as the offence abetted",
+    "cognizable": "Depends on the offence abetted",
+    "bailable": "Depends on the offence abetted",
+    "bns_equivalent": "45"
+  },
+  {
+    "section_no": "511",
+    "title": "Attempt to commit offences punishable with imprisonment for life or other imprisonment",
+    "plain_language_summary": "A general provision punishing an attempt to commit an offence (where no specific 'attempt' section exists for that offence), when the attempt itself does not succeed.",
+    "punishment": "Up to half the longest term provided for the completed offence, or as prescribed, plus/or fine",
+    "cognizable": "Depends on the offence attempted",
+    "bailable": "Depends on the offence attempted",
+    "bns_equivalent": "62"
+  },
+  {
+    "section_no": "141",
+    "title": "Unlawful assembly",
+    "plain_language_summary": "Defines an unlawful assembly as five or more people gathered with a shared unlawful object, such as to commit an offence, resist the law, or forcibly take possession of property.",
+    "punishment": "None (definition — see 143)",
+    "cognizable": "N/A (definition section)",
+    "bailable": "N/A (definition section)",
+    "bns_equivalent": "189(1)"
+  },
+  {
+    "section_no": "143",
+    "title": "Punishment for unlawful assembly",
+    "plain_language_summary": "Punishes membership in an unlawful assembly as defined in Section 141.",
+    "punishment": "Up to 6 months, or fine, or both",
+    "cognizable": "Yes",
+    "bailable": "Yes",
+    "bns_equivalent": "189(2)"
+  },
+  {
+    "section_no": "146",
+    "title": "Rioting",
+    "plain_language_summary": "Defines rioting as an unlawful assembly (or its members) using force or violence in pursuit of their shared unlawful object.",
+    "punishment": "None (definition — see 147)",
+    "cognizable": "N/A (definition section)",
+    "bailable": "N/A (definition section)",
+    "bns_equivalent": "191(1)"
+  },
+  {
+    "section_no": "147",
+    "title": "Punishment for rioting",
+    "plain_language_summary": "Punishes participation in a riot as defined in Section 146.",
+    "punishment": "Up to 2 years, or fine, or both",
+    "cognizable": "Yes",
+    "bailable": "Yes",
+    "bns_equivalent": "191(2)"
+  },
+  {
+    "section_no": "148",
+    "title": "Rioting, armed with deadly weapon",
+    "plain_language_summary": "A more serious form of rioting where the rioter is armed with a deadly weapon or something capable of causing death.",
+    "punishment": "Up to 3 years, or fine, or both",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "191(3)"
+  },
+  {
+    "section_no": "149",
+    "title": "Unlawful assembly — every member guilty of offence committed in prosecution of common object",
+    "plain_language_summary": "If any member of an unlawful assembly commits an offence in pursuit of the group's shared object (or one the group knew was likely), every member of that assembly is guilty of that offence, not just the person who physically did it.",
+    "punishment": "Same as the offence committed",
+    "cognizable": "Depends on the offence committed",
+    "bailable": "Depends on the offence committed",
+    "bns_equivalent": "190"
+  },
+  {
+    "section_no": "182",
+    "title": "False information, with intent to cause public servant to use his lawful power to the injury of another person",
+    "plain_language_summary": "Punishes knowingly giving false information to a public servant that causes that official to act (or not act) in a way that unlawfully harms someone else — e.g. filing a false complaint to get an innocent person investigated.",
+    "punishment": "Up to 6 months, or fine up to ₹5,000, or both",
+    "cognizable": "No",
+    "bailable": "Yes",
+    "bns_equivalent": "217"
+  },
+  {
+    "section_no": "186",
+    "title": "Obstructing public servant in discharge of public functions",
+    "plain_language_summary": "Punishes voluntarily obstructing a public servant from carrying out their official duties.",
+    "punishment": "Up to 3 months, or fine up to ₹500, or both",
+    "cognizable": "Yes",
+    "bailable": "Yes",
+    "bns_equivalent": "221"
+  },
+  {
+    "section_no": "191",
+    "title": "Giving false evidence",
+    "plain_language_summary": "Punishes making a false statement under oath (or under a legal obligation to state the truth) in a judicial proceeding.",
+    "punishment": "Up to 7 years and fine (up to life if used to secure conviction for a capital offence)",
+    "cognizable": "No",
+    "bailable": "Yes",
+    "bns_equivalent": "227"
+  },
+  {
+    "section_no": "201",
+    "title": "Causing disappearance of evidence of offence, or giving false information to screen offender",
+    "plain_language_summary": "Punishes destroying or hiding evidence of a crime, or giving false information, with the intention of protecting the real offender from legal punishment.",
+    "punishment": "Up to 7 years and fine if the offence is punishable with death; scaled down for lesser offences",
+    "cognizable": "Depends on the underlying offence concealed",
+    "bailable": "Depends on the underlying offence concealed",
+    "bns_equivalent": "238"
+  },
+  {
+    "section_no": "212",
+    "title": "Harbouring an offender",
+    "plain_language_summary": "Punishes knowingly sheltering or hiding a person to protect them from arrest, having reason to believe they committed an offence.",
+    "punishment": "Scaled to the offence harboured (up to 5 years for a capital offence)",
+    "cognizable": "Depends on the offence harboured",
+    "bailable": "Depends on the offence harboured",
+    "bns_equivalent": "249"
+  },
+  {
+    "section_no": "299",
+    "title": "Culpable homicide",
+    "plain_language_summary": "Defines culpable homicide as causing death with the intention of causing death or such bodily injury as is likely to cause death, or with knowledge that the act is likely to cause death. This is a definition section — see 302/304 for punishment.",
+    "punishment": "None (definition only)",
+    "cognizable": "N/A (definition section)",
+    "bailable": "N/A (definition section)",
+    "bns_equivalent": "100"
+  },
+  {
+    "section_no": "300",
+    "title": "Murder",
+    "plain_language_summary": "Defines when culpable homicide amounts to murder — essentially, when the act is done with clear intention to kill or cause fatal injury, subject to specific exceptions (e.g. grave and sudden provocation, private defence). This is a definition section — see 302 for punishment.",
+    "punishment": "None (definition only)",
+    "cognizable": "N/A (definition section)",
+    "bailable": "N/A (definition section)",
+    "bns_equivalent": "101"
+  },
+  {
+    "section_no": "302",
+    "title": "Punishment for murder",
+    "plain_language_summary": "Punishes the intentional killing of another person under circumstances that meet the legal definition of murder in Section 300, without any recognized exception applying.",
+    "punishment": "Death or life imprisonment, and shall also be liable to fine",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "103(1)"
+  },
+  {
+    "section_no": "304",
+    "title": "Punishment for culpable homicide not amounting to murder",
+    "plain_language_summary": "Covers killing where the intention or knowledge required for murder is present, but a legal exception applies (e.g. sudden fight without premeditation) so it does not qualify as murder.",
+    "punishment": "Life imprisonment or up to 10 years and fine (if intent to kill/cause fatal injury); up to 10 years, fine, or both (if only knowledge, no intent)",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "105"
+  },
+  {
+    "section_no": "304A",
+    "title": "Causing death by negligence",
+    "plain_language_summary": "Punishes causing death through a rash or negligent act that does not amount to culpable homicide — the classic example is a fatal road accident caused by careless driving.",
+    "punishment": "Up to 2 years, or fine, or both",
+    "cognizable": "Yes",
+    "bailable": "Yes",
+    "bns_equivalent": "106(1)"
+  },
+  {
+    "section_no": "304B",
+    "title": "Dowry death",
+    "plain_language_summary": "Applies when a married woman dies from burns, bodily injury, or under otherwise abnormal circumstances within 7 years of her marriage, and it is shown she was subjected to cruelty or harassment for dowry shortly before her death.",
+    "punishment": "Minimum 7 years, extendable to life imprisonment",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "80(2)"
+  },
+  {
+    "section_no": "306",
+    "title": "Abetment of suicide",
+    "plain_language_summary": "Punishes intentionally instigating, aiding, or conspiring in an act that leads a person to take their own life.",
+    "punishment": "Up to 10 years and fine",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "108"
+  },
+  {
+    "section_no": "307",
+    "title": "Attempt to murder",
+    "plain_language_summary": "Punishes an act done with the intention or knowledge required for murder, in circumstances such that — had death actually resulted — the accused would have been guilty of murder, even though the victim survived.",
+    "punishment": "Up to 10 years and fine; life imprisonment if the victim is actually hurt by the act",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "109"
+  },
+  {
+    "section_no": "308",
+    "title": "Attempt to commit culpable homicide",
+    "plain_language_summary": "The Section 307 equivalent for acts that would amount to culpable homicide not amounting to murder (rather than murder) had death resulted.",
+    "punishment": "Up to 7 years, or fine, or both; up to 3 additional years if hurt is caused",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "110"
+  },
+  {
+    "section_no": "309",
+    "title": "Attempt to commit suicide",
+    "plain_language_summary": "Punishes a person who attempts to take their own life and survives. In practice this section is now applied very rarely — the Mental Healthcare Act, 2017 directs that a person who attempts suicide is presumed to be under severe stress and generally should not be prosecuted.",
+    "punishment": "Up to 1 year, or fine, or both",
+    "cognizable": "No",
+    "bailable": "Yes",
+    "bns_equivalent": "No general equivalent — BNS narrows this to Section 226 (attempting suicide specifically to compel or restrain a public servant from discharging duty); a plain attempt to suicide is not penalized under BNS"
+  },
+  {
+    "section_no": "319",
+    "title": "Hurt",
+    "plain_language_summary": "Defines hurt as causing bodily pain, disease, or infirmity to any person. This is a definition section — see 323 for the general punishment.",
+    "punishment": "None (definition only)",
+    "cognizable": "N/A (definition section)",
+    "bailable": "N/A (definition section)",
+    "bns_equivalent": "114"
+  },
+  {
+    "section_no": "320",
+    "title": "Grievous hurt",
+    "plain_language_summary": "Lists specific categories of serious injury (e.g. emasculation, permanent loss of sight/hearing, fracture, disfiguration of the face/head, injury endangering life) that are classified as 'grievous' rather than simple hurt.",
+    "punishment": "None (definition only — see 325/326)",
+    "cognizable": "N/A (definition section)",
+    "bailable": "N/A (definition section)",
+    "bns_equivalent": "116"
+  },
+  {
+    "section_no": "323",
+    "title": "Punishment for voluntarily causing hurt",
+    "plain_language_summary": "Punishes intentionally causing bodily pain, disease, or infirmity to another person, where the injury doesn't rise to 'grievous hurt'.",
+    "punishment": "Up to 1 year, or fine up to ₹1,000, or both",
+    "cognizable": "No",
+    "bailable": "Yes",
+    "bns_equivalent": "115(2)"
+  },
+  {
+    "section_no": "324",
+    "title": "Voluntarily causing hurt by dangerous weapons or means",
+    "plain_language_summary": "A more serious form of causing hurt, where the injury is inflicted using a weapon, fire, poison, or another dangerous means.",
+    "punishment": "Up to 3 years, or fine, or both",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "118(1)"
+  },
+  {
+    "section_no": "325",
+    "title": "Punishment for voluntarily causing grievous hurt",
+    "plain_language_summary": "Punishes intentionally causing an injury that falls within the 'grievous hurt' categories defined in Section 320.",
+    "punishment": "Up to 7 years and fine",
+    "cognizable": "Yes",
+    "bailable": "Yes",
+    "bns_equivalent": "117(2)"
+  },
+  {
+    "section_no": "326",
+    "title": "Voluntarily causing grievous hurt by dangerous weapons or means",
+    "plain_language_summary": "A more serious form of grievous hurt, inflicted using a weapon, fire, poison, or other dangerous means.",
+    "punishment": "Life imprisonment, or up to 10 years and fine",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "118(2)"
+  },
+  {
+    "section_no": "326A",
+    "title": "Voluntarily causing grievous hurt by use of acid",
+    "plain_language_summary": "Specifically punishes causing grievous hurt (including permanent disfigurement) by throwing or administering acid.",
+    "punishment": "Minimum 10 years, extendable to life imprisonment, and fine to be used for the victim's medical treatment",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "124(1)"
+  },
+  {
+    "section_no": "326B",
+    "title": "Voluntarily throwing or attempting to throw acid",
+    "plain_language_summary": "Punishes the act of throwing, or attempting to throw, acid at a person, or attempting to administer it, even if it doesn't result in the injuries covered by 326A.",
+    "punishment": "Minimum 5 years, extendable to 7 years, and fine",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "124(2)"
+  },
+  {
+    "section_no": "336",
+    "title": "Act endangering life or personal safety of others",
+    "plain_language_summary": "Punishes doing a rash or negligent act that endangers human life or the personal safety of others, even if no injury actually results.",
+    "punishment": "Up to 3 months, or fine up to ₹250, or both",
+    "cognizable": "Yes",
+    "bailable": "Yes",
+    "bns_equivalent": "125(a)"
+  },
+  {
+    "section_no": "337",
+    "title": "Causing hurt by act endangering life or personal safety of others",
+    "plain_language_summary": "Punishes causing hurt (not grievous) through a rash or negligent act that endangers life or personal safety.",
+    "punishment": "Up to 6 months, or fine up to ₹500, or both",
+    "cognizable": "Yes",
+    "bailable": "Yes",
+    "bns_equivalent": "125(b)"
+  },
+  {
+    "section_no": "338",
+    "title": "Causing grievous hurt by act endangering life or personal safety of others",
+    "plain_language_summary": "The grievous-hurt version of Section 337 — a rash or negligent act that endangers life and results in serious injury.",
+    "punishment": "Up to 2 years, or fine up to ₹1,000, or both",
+    "cognizable": "Yes",
+    "bailable": "Yes",
+    "bns_equivalent": "125(b) (aggravated)"
+  },
+  {
+    "section_no": "339",
+    "title": "Wrongful restraint",
+    "plain_language_summary": "Defines wrongful restraint as obstructing a person from proceeding in a direction they have a right to go.",
+    "punishment": "None (definition — see 341)",
+    "cognizable": "N/A (definition section)",
+    "bailable": "N/A (definition section)",
+    "bns_equivalent": "126(1)"
+  },
+  {
+    "section_no": "340",
+    "title": "Wrongful confinement",
+    "plain_language_summary": "Defines wrongful confinement as wrongfully restraining a person in a way that prevents them from moving beyond certain limits.",
+    "punishment": "None (definition — see 342)",
+    "cognizable": "N/A (definition section)",
+    "bailable": "N/A (definition section)",
+    "bns_equivalent": "127(1)"
+  },
+  {
+    "section_no": "341",
+    "title": "Punishment for wrongful restraint",
+    "plain_language_summary": "Punishes wrongful restraint as defined in Section 339.",
+    "punishment": "Up to 1 month, or fine up to ₹500, or both",
+    "cognizable": "Yes",
+    "bailable": "Yes",
+    "bns_equivalent": "126(2)"
+  },
+  {
+    "section_no": "342",
+    "title": "Punishment for wrongful confinement",
+    "plain_language_summary": "Punishes wrongful confinement as defined in Section 340.",
+    "punishment": "Up to 1 year, or fine up to ₹1,000, or both",
+    "cognizable": "Yes",
+    "bailable": "Yes",
+    "bns_equivalent": "127(2)"
+  },
+  {
+    "section_no": "354",
+    "title": "Assault or criminal force to woman with intent to outrage her modesty",
+    "plain_language_summary": "Punishes assaulting or using criminal force against a woman, intending to (or knowing it is likely to) outrage her modesty.",
+    "punishment": "Minimum 1 year, extendable to 5 years, and fine",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "74"
+  },
+  {
+    "section_no": "354A",
+    "title": "Sexual harassment",
+    "plain_language_summary": "Covers unwelcome physical contact and advances, demands for sexual favours, showing pornography against a woman's will, or making sexually coloured remarks.",
+    "punishment": "Up to 3 years, or fine, or both (up to 1 year for the sexually-coloured-remarks limb)",
+    "cognizable": "Yes",
+    "bailable": "No (Yes for the sexually-coloured-remarks limb)",
+    "bns_equivalent": "75"
+  },
+  {
+    "section_no": "354B",
+    "title": "Assault or use of criminal force to woman with intent to disrobe",
+    "plain_language_summary": "Punishes assaulting or using force against a woman, or abetting such an act, with the intent to disrobe her or compel her to be naked.",
+    "punishment": "Minimum 3 years, extendable to 7 years, and fine",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "76"
+  },
+  {
+    "section_no": "354C",
+    "title": "Voyeurism",
+    "plain_language_summary": "Punishes watching or capturing images of a woman engaging in a private act where she would expect not to be observed, or disseminating such images.",
+    "punishment": "1 to 3 years and fine (first conviction); 3 to 7 years and fine (subsequent conviction)",
+    "cognizable": "First conviction: No; subsequent conviction: Yes",
+    "bailable": "First conviction: Yes; subsequent conviction: No",
+    "bns_equivalent": "77"
+  },
+  {
+    "section_no": "354D",
+    "title": "Stalking",
+    "plain_language_summary": "Punishes repeatedly following or contacting a woman, or monitoring her use of the internet/email/electronic communication, despite a clear indication of disinterest.",
+    "punishment": "Up to 3 years and fine (first conviction); up to 5 years and fine (subsequent conviction)",
+    "cognizable": "First conviction: No; subsequent conviction: Yes",
+    "bailable": "First conviction: Yes; subsequent conviction: No",
+    "bns_equivalent": "78"
+  },
+  {
+    "section_no": "359",
+    "title": "Kidnapping",
+    "plain_language_summary": "States that kidnapping is of two kinds: kidnapping from India and kidnapping from lawful guardianship. This is a definition section.",
+    "punishment": "None (definition only)",
+    "cognizable": "N/A (definition section)",
+    "bailable": "N/A (definition section)",
+    "bns_equivalent": "137(1)"
+  },
+  {
+    "section_no": "361",
+    "title": "Kidnapping from lawful guardianship",
+    "plain_language_summary": "Punishes taking or enticing a minor (under 16 for boys, under 18 for girls) or a person of unsound mind, out of the keeping of their lawful guardian, without the guardian's consent.",
+    "punishment": "None (definition — see 363)",
+    "cognizable": "N/A (definition section)",
+    "bailable": "N/A (definition section)",
+    "bns_equivalent": "137(1)(b)"
+  },
+  {
+    "section_no": "363",
+    "title": "Punishment for kidnapping",
+    "plain_language_summary": "Punishes kidnapping as defined in Section 359 (either from India or from lawful guardianship).",
+    "punishment": "Up to 7 years and fine",
+    "cognizable": "Yes",
+    "bailable": "Yes",
+    "bns_equivalent": "137(2)"
+  },
+  {
+    "section_no": "363A",
+    "title": "Kidnapping or maiming a minor for purposes of begging",
+    "plain_language_summary": "Punishes kidnapping a minor, or maiming a minor, in order to employ or use them for begging.",
+    "punishment": "Up to 10 years and fine (kidnapping for begging); life imprisonment (maiming for begging)",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "139"
+  },
+  {
+    "section_no": "364",
+    "title": "Kidnapping or abducting in order to murder",
+    "plain_language_summary": "Punishes kidnapping or abducting a person with the intention of murdering them, or putting them in a position where they are likely to be killed.",
+    "punishment": "Life imprisonment or rigorous imprisonment up to 10 years, and fine",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "138(1)"
+  },
+  {
+    "section_no": "364A",
+    "title": "Kidnapping for ransom",
+    "plain_language_summary": "Punishes kidnapping or abducting a person and threatening to kill/hurt them, or actually hurting them, to force a ransom payment or compel any other action by the government or another person.",
+    "punishment": "Death, life imprisonment, and fine",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "140(1)"
+  },
+  {
+    "section_no": "366",
+    "title": "Kidnapping, abducting or inducing woman to compel her marriage",
+    "plain_language_summary": "Punishes kidnapping or abducting a woman with the intent to force or seduce her into marriage against her will, or to force/seduce her into illicit intercourse.",
+    "punishment": "Up to 10 years and fine",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "141(1)"
+  },
+  {
+    "section_no": "366A",
+    "title": "Procuration of a minor girl",
+    "plain_language_summary": "Punishes inducing a girl under 18 to go from any place, or to do any act, intending that she may be forced or seduced into illicit intercourse with another person.",
+    "punishment": "Up to 10 years and fine",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "96"
+  },
+  {
+    "section_no": "370",
+    "title": "Trafficking of person",
+    "plain_language_summary": "Punishes recruiting, transporting, harbouring, transferring, or receiving a person by force, fraud, or coercion for the purpose of exploitation (including sexual exploitation, slavery, or forced labour).",
+    "punishment": "Minimum 7 years, extendable to 10 years, and fine (higher if the trafficked person is a minor, or if trafficking is on a large scale)",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "143"
+  },
+  {
+    "section_no": "375",
+    "title": "Rape",
+    "plain_language_summary": "Defines the offence of rape — non-consensual sexual intercourse with a woman under the circumstances listed in the section (including lack of consent, consent obtained by fear/fraud, or when she is under 18). This is a definition section — see 376 for punishment.",
+    "punishment": "None (definition only)",
+    "cognizable": "N/A (definition section)",
+    "bailable": "N/A (definition section)",
+    "bns_equivalent": "63"
+  },
+  {
+    "section_no": "376",
+    "title": "Punishment for rape",
+    "plain_language_summary": "Punishes rape as defined in Section 375.",
+    "punishment": "Minimum 10 years (may extend to life imprisonment), and fine",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "64"
+  },
+  {
+    "section_no": "376A",
+    "title": "Punishment for causing death or resulting in persistent vegetative state of victim",
+    "plain_language_summary": "An aggravated punishment applying when an act of rape under Section 376 causes the victim's death, or leaves her in a persistent vegetative state.",
+    "punishment": "Minimum 20 years, extendable to life imprisonment (meaning the remainder of the convict's natural life), or death",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "66"
+  },
+  {
+    "section_no": "376AB",
+    "title": "Punishment for rape on woman under twelve years of age",
+    "plain_language_summary": "An aggravated punishment for rape where the victim is under 12 years old.",
+    "punishment": "Minimum 20 years, extendable to life imprisonment, or death, and fine",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "65(2)"
+  },
+  {
+    "section_no": "376D",
+    "title": "Gang rape",
+    "plain_language_summary": "Applies when a woman is raped by one or more persons acting in furtherance of a common intention, making each of them liable for gang rape.",
+    "punishment": "Minimum 20 years, extendable to life imprisonment, and fine",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "70(1)"
+  },
+  {
+    "section_no": "377",
+    "title": "Unnatural offences",
+    "plain_language_summary": "Historically punished 'carnal intercourse against the order of nature'. Following the Supreme Court's Navtej Singh Johar judgment (2018), consensual same-sex acts between adults are no longer criminalized under this section — it now primarily applies to non-consensual acts and bestiality.",
+    "punishment": "Up to 10 years, or life imprisonment, and fine",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "No direct equivalent — BNS 2023 omitted this section; non-consensual acts of this nature are addressed via the general sexual-offence provisions"
+  },
+  {
+    "section_no": "378",
+    "title": "Theft",
+    "plain_language_summary": "Defines theft as dishonestly taking movable property out of another person's possession, without their consent, intending to permanently deprive them of it. This is a definition section — see 379 for punishment.",
+    "punishment": "None (definition only)",
+    "cognizable": "N/A (definition section)",
+    "bailable": "N/A (definition section)",
+    "bns_equivalent": "301(1)"
+  },
+  {
+    "section_no": "379",
+    "title": "Punishment for theft",
+    "plain_language_summary": "Punishes theft as defined in Section 378.",
+    "punishment": "Up to 3 years, or fine, or both",
+    "cognizable": "Yes",
+    "bailable": "Yes",
+    "bns_equivalent": "303(2)"
+  },
+  {
+    "section_no": "380",
+    "title": "Theft in dwelling house, etc.",
+    "plain_language_summary": "A more serious form of theft, committed in a building, tent, or vessel used as a human dwelling, or for the custody of property.",
+    "punishment": "Up to 7 years and fine",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "305(b)"
+  },
+  {
+    "section_no": "381",
+    "title": "Theft by clerk or servant of property in possession of master",
+    "plain_language_summary": "Punishes theft committed by an employee of property belonging to, or in the possession of, their employer.",
+    "punishment": "Up to 7 years and fine",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "306"
+  },
+  {
+    "section_no": "383",
+    "title": "Extortion",
+    "plain_language_summary": "Defines extortion as intentionally putting a person in fear of injury to dishonestly induce them to hand over property or a valuable security. This is a definition section — see 384 for punishment.",
+    "punishment": "None (definition only)",
+    "cognizable": "N/A (definition section)",
+    "bailable": "N/A (definition section)",
+    "bns_equivalent": "308(1)"
+  },
+  {
+    "section_no": "384",
+    "title": "Punishment for extortion",
+    "plain_language_summary": "Punishes extortion as defined in Section 383.",
+    "punishment": "Up to 3 years, or fine, or both",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "308(2)"
+  },
+  {
+    "section_no": "390",
+    "title": "Robbery",
+    "plain_language_summary": "Defines robbery as theft or extortion accompanied by the use, or threat, of force that puts the victim in fear of instant death, hurt, or wrongful restraint. This is a definition section — see 392 for punishment.",
+    "punishment": "None (definition only)",
+    "cognizable": "N/A (definition section)",
+    "bailable": "N/A (definition section)",
+    "bns_equivalent": "309(1)-(4)"
+  },
+  {
+    "section_no": "392",
+    "title": "Punishment for robbery",
+    "plain_language_summary": "Punishes robbery as defined in Section 390.",
+    "punishment": "Up to 10 years and fine (up to 14 years if committed on a highway between sunset and sunrise)",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "309(5)-(6)"
+  },
+  {
+    "section_no": "393",
+    "title": "Attempt to commit robbery",
+    "plain_language_summary": "Punishes an attempt to commit robbery that does not succeed.",
+    "punishment": "Up to 7 years and fine",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "309(7)"
+  },
+  {
+    "section_no": "394",
+    "title": "Voluntarily causing hurt in committing or attempting to commit robbery",
+    "plain_language_summary": "An aggravated form of robbery where the offender, or anyone jointly concerned, voluntarily causes hurt while committing or attempting the robbery.",
+    "punishment": "Life imprisonment, or rigorous imprisonment up to 10 years, and fine",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "309(4)"
+  },
+  {
+    "section_no": "395",
+    "title": "Punishment for dacoity",
+    "plain_language_summary": "Punishes dacoity — robbery committed jointly by five or more people.",
+    "punishment": "Life imprisonment, or rigorous imprisonment up to 10 years, and fine",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "310(2)"
+  },
+  {
+    "section_no": "396",
+    "title": "Dacoity with murder",
+    "plain_language_summary": "The most aggravated form of dacoity — if any one of five or more persons jointly committing dacoity also commits murder, every one of them is liable for both the dacoity and the murder.",
+    "punishment": "Death, life imprisonment, or rigorous imprisonment up to 10 years, and fine",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "310(3)"
+  },
+  {
+    "section_no": "397",
+    "title": "Robbery or dacoity with attempt to cause death or grievous hurt",
+    "plain_language_summary": "Prescribes a mandatory minimum sentence when the offender, while committing robbery or dacoity, uses a deadly weapon, causes grievous hurt, or attempts to cause death.",
+    "punishment": "Minimum 7 years rigorous imprisonment",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "311"
+  },
+  {
+    "section_no": "402",
+    "title": "Assembling for purpose of committing dacoity",
+    "plain_language_summary": "Punishes merely assembling with others for the purpose of committing dacoity, even before any dacoity is actually attempted.",
+    "punishment": "Up to 7 years and fine",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "312"
+  },
+  {
+    "section_no": "403",
+    "title": "Dishonest misappropriation of property",
+    "plain_language_summary": "Punishes dishonestly using or disposing of movable property belonging to someone else, without their consent, for one's own benefit.",
+    "punishment": "Up to 2 years, or fine, or both",
+    "cognizable": "No",
+    "bailable": "Yes",
+    "bns_equivalent": "314"
+  },
+  {
+    "section_no": "405",
+    "title": "Criminal breach of trust",
+    "plain_language_summary": "Defines criminal breach of trust as dishonestly misappropriating property that was entrusted to a person, or using it in violation of a legal direction on how it should be handled. This is a definition section — see 406 for punishment.",
+    "punishment": "None (definition only)",
+    "cognizable": "N/A (definition section)",
+    "bailable": "N/A (definition section)",
+    "bns_equivalent": "316(1)-(2)"
+  },
+  {
+    "section_no": "406",
+    "title": "Punishment for criminal breach of trust",
+    "plain_language_summary": "Punishes criminal breach of trust as defined in Section 405.",
+    "punishment": "Up to 3 years, or fine, or both",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "316(3)"
+  },
+  {
+    "section_no": "409",
+    "title": "Criminal breach of trust by public servant, banker, merchant or agent",
+    "plain_language_summary": "A more serious form of criminal breach of trust, committed by someone in a position of special trust — a public servant, banker, merchant, factor, broker, attorney, or agent.",
+    "punishment": "Life imprisonment, or up to 10 years, and fine",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "316(5)"
+  },
+  {
+    "section_no": "411",
+    "title": "Dishonestly receiving stolen property",
+    "plain_language_summary": "Punishes receiving or keeping stolen property, knowing or having reason to believe it was stolen.",
+    "punishment": "Up to 3 years, or fine, or both",
+    "cognizable": "Yes",
+    "bailable": "Yes",
+    "bns_equivalent": "317(2)"
+  },
+  {
+    "section_no": "413",
+    "title": "Habitually dealing in stolen property",
+    "plain_language_summary": "A more serious version of Section 411 for someone who habitually receives or deals in stolen property as a course of conduct, not a one-off.",
+    "punishment": "Life imprisonment, or up to 10 years, and fine",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "317(5)"
+  },
+  {
+    "section_no": "415",
+    "title": "Cheating",
+    "plain_language_summary": "Defines cheating as deceiving a person to dishonestly induce them to deliver property, or to do/omit something they would not otherwise have done, causing them harm. This is a definition section — see 417/420 for punishment.",
+    "punishment": "None (definition only)",
+    "cognizable": "N/A (definition section)",
+    "bailable": "N/A (definition section)",
+    "bns_equivalent": "318(1)-(2)"
+  },
+  {
+    "section_no": "417",
+    "title": "Punishment for cheating",
+    "plain_language_summary": "The general punishment for cheating as defined in Section 415, where the more specific/aggravated Section 420 doesn't apply.",
+    "punishment": "Up to 1 year, or fine, or both",
+    "cognizable": "No",
+    "bailable": "Yes",
+    "bns_equivalent": "318(2)"
+  },
+  {
+    "section_no": "418",
+    "title": "Cheating with knowledge that wrongful loss may ensue to person whose interest offender is bound to protect",
+    "plain_language_summary": "An aggravated form of cheating committed by someone who has a legal duty to protect the victim's interests (e.g. a guardian, trustee).",
+    "punishment": "Up to 3 years, or fine, or both",
+    "cognizable": "No",
+    "bailable": "Yes",
+    "bns_equivalent": "318(3)"
+  },
+  {
+    "section_no": "419",
+    "title": "Punishment for cheating by personation",
+    "plain_language_summary": "Punishes cheating by pretending to be someone else (impersonation), whether a real person or a fictitious one.",
+    "punishment": "Up to 3 years, or fine, or both",
+    "cognizable": "Yes",
+    "bailable": "Yes",
+    "bns_equivalent": "319(2)"
+  },
+  {
+    "section_no": "420",
+    "title": "Cheating and dishonestly inducing delivery of property",
+    "plain_language_summary": "The most commonly invoked cheating provision — punishes cheating that dishonestly induces the victim to deliver property to any person, or to alter/destroy a valuable security.",
+    "punishment": "Up to 7 years and fine",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "318(4)"
+  },
+  {
+    "section_no": "425",
+    "title": "Mischief",
+    "plain_language_summary": "Defines mischief as causing wrongful loss or damage to property (or to the public), with intent to cause such loss/damage or knowledge that it is likely. This is a definition section — see 426 for punishment.",
+    "punishment": "None (definition only)",
+    "cognizable": "N/A (definition section)",
+    "bailable": "N/A (definition section)",
+    "bns_equivalent": "324(1)"
+  },
+  {
+    "section_no": "426",
+    "title": "Punishment for mischief",
+    "plain_language_summary": "Punishes mischief as defined in Section 425.",
+    "punishment": "Up to 3 months, or fine, or both",
+    "cognizable": "No",
+    "bailable": "Yes",
+    "bns_equivalent": "324(2)"
+  },
+  {
+    "section_no": "427",
+    "title": "Mischief causing damage to the amount of fifty rupees",
+    "plain_language_summary": "A more serious form of mischief, causing damage or loss valued at fifty rupees or more (a threshold set when the IPC was drafted, so in practice this covers most real property-damage cases).",
+    "punishment": "Up to 2 years, or fine, or both",
+    "cognizable": "No",
+    "bailable": "Yes",
+    "bns_equivalent": "324(3)"
+  },
+  {
+    "section_no": "435",
+    "title": "Mischief by fire or explosive substance with intent to cause damage",
+    "plain_language_summary": "Punishes mischief committed using fire or an explosive substance, intending to cause (or knowing it is likely to cause) damage of ₹100 or more (₹1,000 or more for agricultural produce).",
+    "punishment": "Up to 7 years and fine",
+    "cognizable": "Yes",
+    "bailable": "Yes",
+    "bns_equivalent": "324(6)"
+  },
+  {
+    "section_no": "447",
+    "title": "Punishment for criminal trespass",
+    "plain_language_summary": "Punishes entering (or unlawfully remaining on) another person's property with intent to commit an offence, intimidate, insult, or annoy them.",
+    "punishment": "Up to 3 months, or fine up to ₹500, or both",
+    "cognizable": "Yes",
+    "bailable": "Yes",
+    "bns_equivalent": "329(3)"
+  },
+  {
+    "section_no": "448",
+    "title": "Punishment for house-trespass",
+    "plain_language_summary": "A more serious form of criminal trespass, where the trespass is into a building used as a dwelling or for property custody.",
+    "punishment": "Up to 1 year, or fine up to ₹1,000, or both",
+    "cognizable": "Yes",
+    "bailable": "Yes",
+    "bns_equivalent": "329(4)"
+  },
+  {
+    "section_no": "449",
+    "title": "House-trespass in order to commit offence punishable with death",
+    "plain_language_summary": "House-trespass committed specifically to carry out an offence that carries the death penalty.",
+    "punishment": "Life imprisonment, or rigorous imprisonment up to 10 years, and fine",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "331(1)"
+  },
+  {
+    "section_no": "450",
+    "title": "House-trespass in order to commit offence punishable with imprisonment for life",
+    "plain_language_summary": "House-trespass committed specifically to carry out an offence punishable with life imprisonment.",
+    "punishment": "Up to 10 years and fine",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "331(2)"
+  },
+  {
+    "section_no": "454",
+    "title": "Lurking house-trespass or house-breaking in order to commit offence punishable with imprisonment",
+    "plain_language_summary": "Punishes covertly entering a dwelling (lurking house-trespass) or breaking into one, intending to commit an offence punishable with imprisonment.",
+    "punishment": "Up to 3 years and fine",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "331(4)"
+  },
+  {
+    "section_no": "457",
+    "title": "Lurking house-trespass or house-breaking by night in order to commit offence punishable with imprisonment",
+    "plain_language_summary": "The night-time, more serious version of Section 454.",
+    "punishment": "Up to 5 years and fine",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "331(5)"
+  },
+  {
+    "section_no": "463",
+    "title": "Forgery",
+    "plain_language_summary": "Defines forgery as making a false document or false electronic record with the intent to cause damage, support a false claim, or commit fraud. This is a definition section — see 465 for punishment.",
+    "punishment": "None (definition only)",
+    "cognizable": "N/A (definition section)",
+    "bailable": "N/A (definition section)",
+    "bns_equivalent": "335"
+  },
+  {
+    "section_no": "464",
+    "title": "Making a false document or false electronic record",
+    "plain_language_summary": "Explains what counts as 'making' a false document — e.g. dishonestly creating, altering, or signing a document to make it appear as something it is not.",
+    "punishment": "None (definition only)",
+    "cognizable": "N/A (definition section)",
+    "bailable": "N/A (definition section)",
+    "bns_equivalent": "336"
+  },
+  {
+    "section_no": "465",
+    "title": "Punishment for forgery",
+    "plain_language_summary": "Punishes forgery as defined in Section 463.",
+    "punishment": "Up to 2 years, or fine, or both",
+    "cognizable": "No",
+    "bailable": "Yes",
+    "bns_equivalent": "336(2)"
+  },
+  {
+    "section_no": "467",
+    "title": "Forgery of valuable security, will, etc.",
+    "plain_language_summary": "A more serious forgery offence, involving a valuable security, a will, or an authorization to transfer/receive property.",
+    "punishment": "Life imprisonment, or up to 10 years, and fine",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "338"
+  },
+  {
+    "section_no": "468",
+    "title": "Forgery for purpose of cheating",
+    "plain_language_summary": "Punishes forgery committed specifically with the intent that the false document be used to cheat someone.",
+    "punishment": "Up to 7 years and fine",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "336(3)"
+  },
+  {
+    "section_no": "471",
+    "title": "Using as genuine a forged document or electronic record",
+    "plain_language_summary": "Punishes knowingly using a forged document as if it were genuine — treated the same as forging it in the first place.",
+    "punishment": "Same as for forgery of that document (up to the punishment provided under 465/467/468 as applicable)",
+    "cognizable": "Depends on the type of document forged",
+    "bailable": "Depends on the type of document forged",
+    "bns_equivalent": "340"
+  },
+  {
+    "section_no": "494",
+    "title": "Marrying again during lifetime of husband or wife",
+    "plain_language_summary": "Punishes bigamy — marrying again while a spouse from an earlier, still-valid marriage is alive, unless that earlier marriage has been declared void or dissolved.",
+    "punishment": "Up to 7 years and fine",
+    "cognizable": "No",
+    "bailable": "Yes",
+    "bns_equivalent": "82(1)"
+  },
+  {
+    "section_no": "498",
+    "title": "Enticing or taking away or detaining with criminal intent a married woman",
+    "plain_language_summary": "Punishes taking, enticing, or concealing a married woman with the intent of having illicit intercourse with her, knowing or having reason to believe she is another man's wife.",
+    "punishment": "Up to 2 years, or fine, or both",
+    "cognizable": "No",
+    "bailable": "Yes",
+    "bns_equivalent": "84"
+  },
+  {
+    "section_no": "498A",
+    "title": "Cruelty by husband or relatives of husband",
+    "plain_language_summary": "Punishes subjecting a married woman to cruelty — wilful conduct likely to drive her to suicide/grave injury, or harassment connected to a demand for dowry — by her husband or his relatives.",
+    "punishment": "Up to 3 years and fine",
+    "cognizable": "Yes",
+    "bailable": "No",
+    "bns_equivalent": "85"
+  },
+  {
+    "section_no": "499",
+    "title": "Defamation",
+    "plain_language_summary": "Defines defamation as making or publishing an imputation about a person, intending to harm (or knowing it is likely to harm) their reputation. This is a definition section — see 500 for punishment.",
+    "punishment": "None (definition only)",
+    "cognizable": "N/A (definition section)",
+    "bailable": "N/A (definition section)",
+    "bns_equivalent": "356(1)"
+  },
+  {
+    "section_no": "500",
+    "title": "Punishment for defamation",
+    "plain_language_summary": "Punishes defamation as defined in Section 499.",
+    "punishment": "Up to 2 years, or fine, or both",
+    "cognizable": "No",
+    "bailable": "Yes",
+    "bns_equivalent": "356(2)"
+  },
+  {
+    "section_no": "503",
+    "title": "Criminal intimidation",
+    "plain_language_summary": "Defines criminal intimidation as threatening someone with injury to their person, reputation, or property (or to someone they care about), to alarm them or force them to do/not do something they're legally entitled to do/refuse. This is a definition section — see 506 for punishment.",
+    "punishment": "None (definition only)",
+    "cognizable": "N/A (definition section)",
+    "bailable": "N/A (definition section)",
+    "bns_equivalent": "351(1)"
+  },
+  {
+    "section_no": "504",
+    "title": "Intentional insult with intent to provoke breach of the peace",
+    "plain_language_summary": "Punishes intentionally insulting someone in a way that is meant to (or is likely to) provoke them into breaking the public peace or committing another offence.",
+    "punishment": "Up to 2 years, or fine, or both",
+    "cognizable": "Yes",
+    "bailable": "Yes",
+    "bns_equivalent": "352"
+  },
+  {
+    "section_no": "506",
+    "title": "Punishment for criminal intimidation",
+    "plain_language_summary": "Punishes criminal intimidation as defined in Section 503.",
+    "punishment": "Up to 2 years, or fine, or both (up to 7 years if the threat is to cause death/grievous hurt, or to destroy property by fire, or of an offence punishable with death/life imprisonment)",
+    "cognizable": "No (Yes for the aggravated 7-year form)",
+    "bailable": "Yes (No for the aggravated 7-year form)",
+    "bns_equivalent": "351(2)-(3)"
+  },
+  {
+    "section_no": "507",
+    "title": "Criminal intimidation by an anonymous communication",
+    "plain_language_summary": "An aggravated form of criminal intimidation where the threat is made anonymously, or the sender conceals their identity.",
+    "punishment": "Up to 2 years, in addition to the punishment under 506",
+    "cognizable": "No",
+    "bailable": "Yes",
+    "bns_equivalent": "351(4)"
+  },
+  {
+    "section_no": "509",
+    "title": "Word, gesture or act intended to insult the modesty of a woman",
+    "plain_language_summary": "Punishes any word, sound, gesture, or act intended to insult a woman's modesty, or intrude on her privacy.",
+    "punishment": "Up to 3 years and fine",
+    "cognizable": "Yes",
+    "bailable": "Yes",
+    "bns_equivalent": "79"
+  }
+]
