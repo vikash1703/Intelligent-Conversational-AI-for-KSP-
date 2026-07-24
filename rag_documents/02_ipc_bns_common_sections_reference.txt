@@ -1,0 +1,853 @@
+IPC / BNS LEGAL REFERENCE — SECTIONS AND PROCEDURES
+(General legal reference for chatbot Q&A. This is a summary aid only — for a specific case, the authoritative Act/Section values always come from the live database's Act and Section tables, not this document. For operational reference; verify against the official text.)
+
+IMPORTANT NOTE ON IPC vs BNS: India's Indian Penal Code, 1860 (IPC) was replaced by the Bharatiya Nyaya Sanhita, 2023 (BNS) with effect from 1 July 2024. Cases registered before that date are recorded under IPC section numbers; cases registered on/after that date use BNS section numbers. When a user asks 'what is Section X' with no other qualifier, treat it as an IPC section number unless they say BNS or the case context indicates otherwise.
+
+==============================================================================
+PART 1: IPC SECTIONS
+==============================================================================
+
+--- IPC SECTION 34 — Acts done by several persons in furtherance of common intention ---
+Plain-language meaning: When several people share a common intention to commit a crime and one of them commits the criminal act, every one of them is held liable for that act as if they had each done it personally. It is not a standalone offence — it attaches to whatever offence was actually committed.
+Punishment: Same as the substantive offence committed by the group
+Cognizable: Depends on the underlying offence
+Bailable: Depends on the underlying offence
+BNS equivalent: 3(5)
+
+--- IPC SECTION 120A — Definition of criminal conspiracy ---
+Plain-language meaning: Defines criminal conspiracy as an agreement between two or more persons to do an illegal act, or a legal act by illegal means. This is a definition section — the punishment is in Section 120B.
+Punishment: None (definition only — see 120B)
+Cognizable: N/A (definition section)
+Bailable: N/A (definition section)
+BNS equivalent: 61(1)
+
+--- IPC SECTION 120B — Punishment for criminal conspiracy ---
+Plain-language meaning: Punishes the agreement itself to commit an illegal act, even if the act is never carried out. If the conspiracy is to commit an offence punishable with death, life imprisonment, or rigorous imprisonment of two years or more, it is punished the same as abetting that offence; conspiracies for lesser offences get a lighter punishment.
+Punishment: Same as abetting the planned offence (for serious offences); otherwise up to 6 months, fine, or both
+Cognizable: Depends on the offence conspired for
+Bailable: Depends on the offence conspired for
+BNS equivalent: 61(2)
+
+--- IPC SECTION 109 — Punishment of abetment if the act abetted is committed ---
+Plain-language meaning: Punishes a person who abets (instigates, conspires, or intentionally aids) an offence, when that offence actually goes on to be committed as a result — with the same punishment as the offence itself, unless a specific abetment provision says otherwise.
+Punishment: Same as the offence abetted
+Cognizable: Depends on the offence abetted
+Bailable: Depends on the offence abetted
+BNS equivalent: 45
+
+--- IPC SECTION 511 — Attempt to commit offences punishable with imprisonment for life or other imprisonment ---
+Plain-language meaning: A general provision punishing an attempt to commit an offence (where no specific 'attempt' section exists for that offence), when the attempt itself does not succeed.
+Punishment: Up to half the longest term provided for the completed offence, or as prescribed, plus/or fine
+Cognizable: Depends on the offence attempted
+Bailable: Depends on the offence attempted
+BNS equivalent: 62
+
+--- IPC SECTION 141 — Unlawful assembly ---
+Plain-language meaning: Defines an unlawful assembly as five or more people gathered with a shared unlawful object, such as to commit an offence, resist the law, or forcibly take possession of property.
+Punishment: None (definition — see 143)
+Cognizable: N/A (definition section)
+Bailable: N/A (definition section)
+BNS equivalent: 189(1)
+
+--- IPC SECTION 143 — Punishment for unlawful assembly ---
+Plain-language meaning: Punishes membership in an unlawful assembly as defined in Section 141.
+Punishment: Up to 6 months, or fine, or both
+Cognizable: Yes
+Bailable: Yes
+BNS equivalent: 189(2)
+
+--- IPC SECTION 146 — Rioting ---
+Plain-language meaning: Defines rioting as an unlawful assembly (or its members) using force or violence in pursuit of their shared unlawful object.
+Punishment: None (definition — see 147)
+Cognizable: N/A (definition section)
+Bailable: N/A (definition section)
+BNS equivalent: 191(1)
+
+--- IPC SECTION 147 — Punishment for rioting ---
+Plain-language meaning: Punishes participation in a riot as defined in Section 146.
+Punishment: Up to 2 years, or fine, or both
+Cognizable: Yes
+Bailable: Yes
+BNS equivalent: 191(2)
+
+--- IPC SECTION 148 — Rioting, armed with deadly weapon ---
+Plain-language meaning: A more serious form of rioting where the rioter is armed with a deadly weapon or something capable of causing death.
+Punishment: Up to 3 years, or fine, or both
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 191(3)
+
+--- IPC SECTION 149 — Unlawful assembly — every member guilty of offence committed in prosecution of common object ---
+Plain-language meaning: If any member of an unlawful assembly commits an offence in pursuit of the group's shared object (or one the group knew was likely), every member of that assembly is guilty of that offence, not just the person who physically did it.
+Punishment: Same as the offence committed
+Cognizable: Depends on the offence committed
+Bailable: Depends on the offence committed
+BNS equivalent: 190
+
+--- IPC SECTION 182 — False information, with intent to cause public servant to use his lawful power to the injury of another person ---
+Plain-language meaning: Punishes knowingly giving false information to a public servant that causes that official to act (or not act) in a way that unlawfully harms someone else — e.g. filing a false complaint to get an innocent person investigated.
+Punishment: Up to 6 months, or fine up to ₹5,000, or both
+Cognizable: No
+Bailable: Yes
+BNS equivalent: 217
+
+--- IPC SECTION 186 — Obstructing public servant in discharge of public functions ---
+Plain-language meaning: Punishes voluntarily obstructing a public servant from carrying out their official duties.
+Punishment: Up to 3 months, or fine up to ₹500, or both
+Cognizable: Yes
+Bailable: Yes
+BNS equivalent: 221
+
+--- IPC SECTION 191 — Giving false evidence ---
+Plain-language meaning: Punishes making a false statement under oath (or under a legal obligation to state the truth) in a judicial proceeding.
+Punishment: Up to 7 years and fine (up to life if used to secure conviction for a capital offence)
+Cognizable: No
+Bailable: Yes
+BNS equivalent: 227
+
+--- IPC SECTION 201 — Causing disappearance of evidence of offence, or giving false information to screen offender ---
+Plain-language meaning: Punishes destroying or hiding evidence of a crime, or giving false information, with the intention of protecting the real offender from legal punishment.
+Punishment: Up to 7 years and fine if the offence is punishable with death; scaled down for lesser offences
+Cognizable: Depends on the underlying offence concealed
+Bailable: Depends on the underlying offence concealed
+BNS equivalent: 238
+
+--- IPC SECTION 212 — Harbouring an offender ---
+Plain-language meaning: Punishes knowingly sheltering or hiding a person to protect them from arrest, having reason to believe they committed an offence.
+Punishment: Scaled to the offence harboured (up to 5 years for a capital offence)
+Cognizable: Depends on the offence harboured
+Bailable: Depends on the offence harboured
+BNS equivalent: 249
+
+--- IPC SECTION 299 — Culpable homicide ---
+Plain-language meaning: Defines culpable homicide as causing death with the intention of causing death or such bodily injury as is likely to cause death, or with knowledge that the act is likely to cause death. This is a definition section — see 302/304 for punishment.
+Punishment: None (definition only)
+Cognizable: N/A (definition section)
+Bailable: N/A (definition section)
+BNS equivalent: 100
+
+--- IPC SECTION 300 — Murder ---
+Plain-language meaning: Defines when culpable homicide amounts to murder — essentially, when the act is done with clear intention to kill or cause fatal injury, subject to specific exceptions (e.g. grave and sudden provocation, private defence). This is a definition section — see 302 for punishment.
+Punishment: None (definition only)
+Cognizable: N/A (definition section)
+Bailable: N/A (definition section)
+BNS equivalent: 101
+
+--- IPC SECTION 302 — Punishment for murder ---
+Plain-language meaning: Punishes the intentional killing of another person under circumstances that meet the legal definition of murder in Section 300, without any recognized exception applying.
+Punishment: Death or life imprisonment, and shall also be liable to fine
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 103(1)
+
+--- IPC SECTION 304 — Punishment for culpable homicide not amounting to murder ---
+Plain-language meaning: Covers killing where the intention or knowledge required for murder is present, but a legal exception applies (e.g. sudden fight without premeditation) so it does not qualify as murder.
+Punishment: Life imprisonment or up to 10 years and fine (if intent to kill/cause fatal injury); up to 10 years, fine, or both (if only knowledge, no intent)
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 105
+
+--- IPC SECTION 304A — Causing death by negligence ---
+Plain-language meaning: Punishes causing death through a rash or negligent act that does not amount to culpable homicide — the classic example is a fatal road accident caused by careless driving.
+Punishment: Up to 2 years, or fine, or both
+Cognizable: Yes
+Bailable: Yes
+BNS equivalent: 106(1)
+
+--- IPC SECTION 304B — Dowry death ---
+Plain-language meaning: Applies when a married woman dies from burns, bodily injury, or under otherwise abnormal circumstances within 7 years of her marriage, and it is shown she was subjected to cruelty or harassment for dowry shortly before her death.
+Punishment: Minimum 7 years, extendable to life imprisonment
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 80(2)
+
+--- IPC SECTION 306 — Abetment of suicide ---
+Plain-language meaning: Punishes intentionally instigating, aiding, or conspiring in an act that leads a person to take their own life.
+Punishment: Up to 10 years and fine
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 108
+
+--- IPC SECTION 307 — Attempt to murder ---
+Plain-language meaning: Punishes an act done with the intention or knowledge required for murder, in circumstances such that — had death actually resulted — the accused would have been guilty of murder, even though the victim survived.
+Punishment: Up to 10 years and fine; life imprisonment if the victim is actually hurt by the act
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 109
+
+--- IPC SECTION 308 — Attempt to commit culpable homicide ---
+Plain-language meaning: The Section 307 equivalent for acts that would amount to culpable homicide not amounting to murder (rather than murder) had death resulted.
+Punishment: Up to 7 years, or fine, or both; up to 3 additional years if hurt is caused
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 110
+
+--- IPC SECTION 309 — Attempt to commit suicide ---
+Plain-language meaning: Punishes a person who attempts to take their own life and survives. In practice this section is now applied very rarely — the Mental Healthcare Act, 2017 directs that a person who attempts suicide is presumed to be under severe stress and generally should not be prosecuted.
+Punishment: Up to 1 year, or fine, or both
+Cognizable: No
+Bailable: Yes
+BNS equivalent: No general equivalent — BNS narrows this to Section 226 (attempting suicide specifically to compel or restrain a public servant from discharging duty); a plain attempt to suicide is not penalized under BNS
+
+--- IPC SECTION 319 — Hurt ---
+Plain-language meaning: Defines hurt as causing bodily pain, disease, or infirmity to any person. This is a definition section — see 323 for the general punishment.
+Punishment: None (definition only)
+Cognizable: N/A (definition section)
+Bailable: N/A (definition section)
+BNS equivalent: 114
+
+--- IPC SECTION 320 — Grievous hurt ---
+Plain-language meaning: Lists specific categories of serious injury (e.g. emasculation, permanent loss of sight/hearing, fracture, disfiguration of the face/head, injury endangering life) that are classified as 'grievous' rather than simple hurt.
+Punishment: None (definition only — see 325/326)
+Cognizable: N/A (definition section)
+Bailable: N/A (definition section)
+BNS equivalent: 116
+
+--- IPC SECTION 323 — Punishment for voluntarily causing hurt ---
+Plain-language meaning: Punishes intentionally causing bodily pain, disease, or infirmity to another person, where the injury doesn't rise to 'grievous hurt'.
+Punishment: Up to 1 year, or fine up to ₹1,000, or both
+Cognizable: No
+Bailable: Yes
+BNS equivalent: 115(2)
+
+--- IPC SECTION 324 — Voluntarily causing hurt by dangerous weapons or means ---
+Plain-language meaning: A more serious form of causing hurt, where the injury is inflicted using a weapon, fire, poison, or another dangerous means.
+Punishment: Up to 3 years, or fine, or both
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 118(1)
+
+--- IPC SECTION 325 — Punishment for voluntarily causing grievous hurt ---
+Plain-language meaning: Punishes intentionally causing an injury that falls within the 'grievous hurt' categories defined in Section 320.
+Punishment: Up to 7 years and fine
+Cognizable: Yes
+Bailable: Yes
+BNS equivalent: 117(2)
+
+--- IPC SECTION 326 — Voluntarily causing grievous hurt by dangerous weapons or means ---
+Plain-language meaning: A more serious form of grievous hurt, inflicted using a weapon, fire, poison, or other dangerous means.
+Punishment: Life imprisonment, or up to 10 years and fine
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 118(2)
+
+--- IPC SECTION 326A — Voluntarily causing grievous hurt by use of acid ---
+Plain-language meaning: Specifically punishes causing grievous hurt (including permanent disfigurement) by throwing or administering acid.
+Punishment: Minimum 10 years, extendable to life imprisonment, and fine to be used for the victim's medical treatment
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 124(1)
+
+--- IPC SECTION 326B — Voluntarily throwing or attempting to throw acid ---
+Plain-language meaning: Punishes the act of throwing, or attempting to throw, acid at a person, or attempting to administer it, even if it doesn't result in the injuries covered by 326A.
+Punishment: Minimum 5 years, extendable to 7 years, and fine
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 124(2)
+
+--- IPC SECTION 336 — Act endangering life or personal safety of others ---
+Plain-language meaning: Punishes doing a rash or negligent act that endangers human life or the personal safety of others, even if no injury actually results.
+Punishment: Up to 3 months, or fine up to ₹250, or both
+Cognizable: Yes
+Bailable: Yes
+BNS equivalent: 125(a)
+
+--- IPC SECTION 337 — Causing hurt by act endangering life or personal safety of others ---
+Plain-language meaning: Punishes causing hurt (not grievous) through a rash or negligent act that endangers life or personal safety.
+Punishment: Up to 6 months, or fine up to ₹500, or both
+Cognizable: Yes
+Bailable: Yes
+BNS equivalent: 125(b)
+
+--- IPC SECTION 338 — Causing grievous hurt by act endangering life or personal safety of others ---
+Plain-language meaning: The grievous-hurt version of Section 337 — a rash or negligent act that endangers life and results in serious injury.
+Punishment: Up to 2 years, or fine up to ₹1,000, or both
+Cognizable: Yes
+Bailable: Yes
+BNS equivalent: 125(b) (aggravated)
+
+--- IPC SECTION 339 — Wrongful restraint ---
+Plain-language meaning: Defines wrongful restraint as obstructing a person from proceeding in a direction they have a right to go.
+Punishment: None (definition — see 341)
+Cognizable: N/A (definition section)
+Bailable: N/A (definition section)
+BNS equivalent: 126(1)
+
+--- IPC SECTION 340 — Wrongful confinement ---
+Plain-language meaning: Defines wrongful confinement as wrongfully restraining a person in a way that prevents them from moving beyond certain limits.
+Punishment: None (definition — see 342)
+Cognizable: N/A (definition section)
+Bailable: N/A (definition section)
+BNS equivalent: 127(1)
+
+--- IPC SECTION 341 — Punishment for wrongful restraint ---
+Plain-language meaning: Punishes wrongful restraint as defined in Section 339.
+Punishment: Up to 1 month, or fine up to ₹500, or both
+Cognizable: Yes
+Bailable: Yes
+BNS equivalent: 126(2)
+
+--- IPC SECTION 342 — Punishment for wrongful confinement ---
+Plain-language meaning: Punishes wrongful confinement as defined in Section 340.
+Punishment: Up to 1 year, or fine up to ₹1,000, or both
+Cognizable: Yes
+Bailable: Yes
+BNS equivalent: 127(2)
+
+--- IPC SECTION 354 — Assault or criminal force to woman with intent to outrage her modesty ---
+Plain-language meaning: Punishes assaulting or using criminal force against a woman, intending to (or knowing it is likely to) outrage her modesty.
+Punishment: Minimum 1 year, extendable to 5 years, and fine
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 74
+
+--- IPC SECTION 354A — Sexual harassment ---
+Plain-language meaning: Covers unwelcome physical contact and advances, demands for sexual favours, showing pornography against a woman's will, or making sexually coloured remarks.
+Punishment: Up to 3 years, or fine, or both (up to 1 year for the sexually-coloured-remarks limb)
+Cognizable: Yes
+Bailable: No (Yes for the sexually-coloured-remarks limb)
+BNS equivalent: 75
+
+--- IPC SECTION 354B — Assault or use of criminal force to woman with intent to disrobe ---
+Plain-language meaning: Punishes assaulting or using force against a woman, or abetting such an act, with the intent to disrobe her or compel her to be naked.
+Punishment: Minimum 3 years, extendable to 7 years, and fine
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 76
+
+--- IPC SECTION 354C — Voyeurism ---
+Plain-language meaning: Punishes watching or capturing images of a woman engaging in a private act where she would expect not to be observed, or disseminating such images.
+Punishment: 1 to 3 years and fine (first conviction); 3 to 7 years and fine (subsequent conviction)
+Cognizable: First conviction: No; subsequent conviction: Yes
+Bailable: First conviction: Yes; subsequent conviction: No
+BNS equivalent: 77
+
+--- IPC SECTION 354D — Stalking ---
+Plain-language meaning: Punishes repeatedly following or contacting a woman, or monitoring her use of the internet/email/electronic communication, despite a clear indication of disinterest.
+Punishment: Up to 3 years and fine (first conviction); up to 5 years and fine (subsequent conviction)
+Cognizable: First conviction: No; subsequent conviction: Yes
+Bailable: First conviction: Yes; subsequent conviction: No
+BNS equivalent: 78
+
+--- IPC SECTION 359 — Kidnapping ---
+Plain-language meaning: States that kidnapping is of two kinds: kidnapping from India and kidnapping from lawful guardianship. This is a definition section.
+Punishment: None (definition only)
+Cognizable: N/A (definition section)
+Bailable: N/A (definition section)
+BNS equivalent: 137(1)
+
+--- IPC SECTION 361 — Kidnapping from lawful guardianship ---
+Plain-language meaning: Punishes taking or enticing a minor (under 16 for boys, under 18 for girls) or a person of unsound mind, out of the keeping of their lawful guardian, without the guardian's consent.
+Punishment: None (definition — see 363)
+Cognizable: N/A (definition section)
+Bailable: N/A (definition section)
+BNS equivalent: 137(1)(b)
+
+--- IPC SECTION 363 — Punishment for kidnapping ---
+Plain-language meaning: Punishes kidnapping as defined in Section 359 (either from India or from lawful guardianship).
+Punishment: Up to 7 years and fine
+Cognizable: Yes
+Bailable: Yes
+BNS equivalent: 137(2)
+
+--- IPC SECTION 363A — Kidnapping or maiming a minor for purposes of begging ---
+Plain-language meaning: Punishes kidnapping a minor, or maiming a minor, in order to employ or use them for begging.
+Punishment: Up to 10 years and fine (kidnapping for begging); life imprisonment (maiming for begging)
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 139
+
+--- IPC SECTION 364 — Kidnapping or abducting in order to murder ---
+Plain-language meaning: Punishes kidnapping or abducting a person with the intention of murdering them, or putting them in a position where they are likely to be killed.
+Punishment: Life imprisonment or rigorous imprisonment up to 10 years, and fine
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 138(1)
+
+--- IPC SECTION 364A — Kidnapping for ransom ---
+Plain-language meaning: Punishes kidnapping or abducting a person and threatening to kill/hurt them, or actually hurting them, to force a ransom payment or compel any other action by the government or another person.
+Punishment: Death, life imprisonment, and fine
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 140(1)
+
+--- IPC SECTION 366 — Kidnapping, abducting or inducing woman to compel her marriage ---
+Plain-language meaning: Punishes kidnapping or abducting a woman with the intent to force or seduce her into marriage against her will, or to force/seduce her into illicit intercourse.
+Punishment: Up to 10 years and fine
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 141(1)
+
+--- IPC SECTION 366A — Procuration of a minor girl ---
+Plain-language meaning: Punishes inducing a girl under 18 to go from any place, or to do any act, intending that she may be forced or seduced into illicit intercourse with another person.
+Punishment: Up to 10 years and fine
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 96
+
+--- IPC SECTION 370 — Trafficking of person ---
+Plain-language meaning: Punishes recruiting, transporting, harbouring, transferring, or receiving a person by force, fraud, or coercion for the purpose of exploitation (including sexual exploitation, slavery, or forced labour).
+Punishment: Minimum 7 years, extendable to 10 years, and fine (higher if the trafficked person is a minor, or if trafficking is on a large scale)
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 143
+
+--- IPC SECTION 375 — Rape ---
+Plain-language meaning: Defines the offence of rape — non-consensual sexual intercourse with a woman under the circumstances listed in the section (including lack of consent, consent obtained by fear/fraud, or when she is under 18). This is a definition section — see 376 for punishment.
+Punishment: None (definition only)
+Cognizable: N/A (definition section)
+Bailable: N/A (definition section)
+BNS equivalent: 63
+
+--- IPC SECTION 376 — Punishment for rape ---
+Plain-language meaning: Punishes rape as defined in Section 375.
+Punishment: Minimum 10 years (may extend to life imprisonment), and fine
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 64
+
+--- IPC SECTION 376A — Punishment for causing death or resulting in persistent vegetative state of victim ---
+Plain-language meaning: An aggravated punishment applying when an act of rape under Section 376 causes the victim's death, or leaves her in a persistent vegetative state.
+Punishment: Minimum 20 years, extendable to life imprisonment (meaning the remainder of the convict's natural life), or death
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 66
+
+--- IPC SECTION 376AB — Punishment for rape on woman under twelve years of age ---
+Plain-language meaning: An aggravated punishment for rape where the victim is under 12 years old.
+Punishment: Minimum 20 years, extendable to life imprisonment, or death, and fine
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 65(2)
+
+--- IPC SECTION 376D — Gang rape ---
+Plain-language meaning: Applies when a woman is raped by one or more persons acting in furtherance of a common intention, making each of them liable for gang rape.
+Punishment: Minimum 20 years, extendable to life imprisonment, and fine
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 70(1)
+
+--- IPC SECTION 377 — Unnatural offences ---
+Plain-language meaning: Historically punished 'carnal intercourse against the order of nature'. Following the Supreme Court's Navtej Singh Johar judgment (2018), consensual same-sex acts between adults are no longer criminalized under this section — it now primarily applies to non-consensual acts and bestiality.
+Punishment: Up to 10 years, or life imprisonment, and fine
+Cognizable: Yes
+Bailable: No
+BNS equivalent: No direct equivalent — BNS 2023 omitted this section; non-consensual acts of this nature are addressed via the general sexual-offence provisions
+
+--- IPC SECTION 378 — Theft ---
+Plain-language meaning: Defines theft as dishonestly taking movable property out of another person's possession, without their consent, intending to permanently deprive them of it. This is a definition section — see 379 for punishment.
+Punishment: None (definition only)
+Cognizable: N/A (definition section)
+Bailable: N/A (definition section)
+BNS equivalent: 301(1)
+
+--- IPC SECTION 379 — Punishment for theft ---
+Plain-language meaning: Punishes theft as defined in Section 378.
+Punishment: Up to 3 years, or fine, or both
+Cognizable: Yes
+Bailable: Yes
+BNS equivalent: 303(2)
+
+--- IPC SECTION 380 — Theft in dwelling house, etc. ---
+Plain-language meaning: A more serious form of theft, committed in a building, tent, or vessel used as a human dwelling, or for the custody of property.
+Punishment: Up to 7 years and fine
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 305(b)
+
+--- IPC SECTION 381 — Theft by clerk or servant of property in possession of master ---
+Plain-language meaning: Punishes theft committed by an employee of property belonging to, or in the possession of, their employer.
+Punishment: Up to 7 years and fine
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 306
+
+--- IPC SECTION 383 — Extortion ---
+Plain-language meaning: Defines extortion as intentionally putting a person in fear of injury to dishonestly induce them to hand over property or a valuable security. This is a definition section — see 384 for punishment.
+Punishment: None (definition only)
+Cognizable: N/A (definition section)
+Bailable: N/A (definition section)
+BNS equivalent: 308(1)
+
+--- IPC SECTION 384 — Punishment for extortion ---
+Plain-language meaning: Punishes extortion as defined in Section 383.
+Punishment: Up to 3 years, or fine, or both
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 308(2)
+
+--- IPC SECTION 390 — Robbery ---
+Plain-language meaning: Defines robbery as theft or extortion accompanied by the use, or threat, of force that puts the victim in fear of instant death, hurt, or wrongful restraint. This is a definition section — see 392 for punishment.
+Punishment: None (definition only)
+Cognizable: N/A (definition section)
+Bailable: N/A (definition section)
+BNS equivalent: 309(1)-(4)
+
+--- IPC SECTION 392 — Punishment for robbery ---
+Plain-language meaning: Punishes robbery as defined in Section 390.
+Punishment: Up to 10 years and fine (up to 14 years if committed on a highway between sunset and sunrise)
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 309(5)-(6)
+
+--- IPC SECTION 393 — Attempt to commit robbery ---
+Plain-language meaning: Punishes an attempt to commit robbery that does not succeed.
+Punishment: Up to 7 years and fine
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 309(7)
+
+--- IPC SECTION 394 — Voluntarily causing hurt in committing or attempting to commit robbery ---
+Plain-language meaning: An aggravated form of robbery where the offender, or anyone jointly concerned, voluntarily causes hurt while committing or attempting the robbery.
+Punishment: Life imprisonment, or rigorous imprisonment up to 10 years, and fine
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 309(4)
+
+--- IPC SECTION 395 — Punishment for dacoity ---
+Plain-language meaning: Punishes dacoity — robbery committed jointly by five or more people.
+Punishment: Life imprisonment, or rigorous imprisonment up to 10 years, and fine
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 310(2)
+
+--- IPC SECTION 396 — Dacoity with murder ---
+Plain-language meaning: The most aggravated form of dacoity — if any one of five or more persons jointly committing dacoity also commits murder, every one of them is liable for both the dacoity and the murder.
+Punishment: Death, life imprisonment, or rigorous imprisonment up to 10 years, and fine
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 310(3)
+
+--- IPC SECTION 397 — Robbery or dacoity with attempt to cause death or grievous hurt ---
+Plain-language meaning: Prescribes a mandatory minimum sentence when the offender, while committing robbery or dacoity, uses a deadly weapon, causes grievous hurt, or attempts to cause death.
+Punishment: Minimum 7 years rigorous imprisonment
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 311
+
+--- IPC SECTION 402 — Assembling for purpose of committing dacoity ---
+Plain-language meaning: Punishes merely assembling with others for the purpose of committing dacoity, even before any dacoity is actually attempted.
+Punishment: Up to 7 years and fine
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 312
+
+--- IPC SECTION 403 — Dishonest misappropriation of property ---
+Plain-language meaning: Punishes dishonestly using or disposing of movable property belonging to someone else, without their consent, for one's own benefit.
+Punishment: Up to 2 years, or fine, or both
+Cognizable: No
+Bailable: Yes
+BNS equivalent: 314
+
+--- IPC SECTION 405 — Criminal breach of trust ---
+Plain-language meaning: Defines criminal breach of trust as dishonestly misappropriating property that was entrusted to a person, or using it in violation of a legal direction on how it should be handled. This is a definition section — see 406 for punishment.
+Punishment: None (definition only)
+Cognizable: N/A (definition section)
+Bailable: N/A (definition section)
+BNS equivalent: 316(1)-(2)
+
+--- IPC SECTION 406 — Punishment for criminal breach of trust ---
+Plain-language meaning: Punishes criminal breach of trust as defined in Section 405.
+Punishment: Up to 3 years, or fine, or both
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 316(3)
+
+--- IPC SECTION 409 — Criminal breach of trust by public servant, banker, merchant or agent ---
+Plain-language meaning: A more serious form of criminal breach of trust, committed by someone in a position of special trust — a public servant, banker, merchant, factor, broker, attorney, or agent.
+Punishment: Life imprisonment, or up to 10 years, and fine
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 316(5)
+
+--- IPC SECTION 411 — Dishonestly receiving stolen property ---
+Plain-language meaning: Punishes receiving or keeping stolen property, knowing or having reason to believe it was stolen.
+Punishment: Up to 3 years, or fine, or both
+Cognizable: Yes
+Bailable: Yes
+BNS equivalent: 317(2)
+
+--- IPC SECTION 413 — Habitually dealing in stolen property ---
+Plain-language meaning: A more serious version of Section 411 for someone who habitually receives or deals in stolen property as a course of conduct, not a one-off.
+Punishment: Life imprisonment, or up to 10 years, and fine
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 317(5)
+
+--- IPC SECTION 415 — Cheating ---
+Plain-language meaning: Defines cheating as deceiving a person to dishonestly induce them to deliver property, or to do/omit something they would not otherwise have done, causing them harm. This is a definition section — see 417/420 for punishment.
+Punishment: None (definition only)
+Cognizable: N/A (definition section)
+Bailable: N/A (definition section)
+BNS equivalent: 318(1)-(2)
+
+--- IPC SECTION 417 — Punishment for cheating ---
+Plain-language meaning: The general punishment for cheating as defined in Section 415, where the more specific/aggravated Section 420 doesn't apply.
+Punishment: Up to 1 year, or fine, or both
+Cognizable: No
+Bailable: Yes
+BNS equivalent: 318(2)
+
+--- IPC SECTION 418 — Cheating with knowledge that wrongful loss may ensue to person whose interest offender is bound to protect ---
+Plain-language meaning: An aggravated form of cheating committed by someone who has a legal duty to protect the victim's interests (e.g. a guardian, trustee).
+Punishment: Up to 3 years, or fine, or both
+Cognizable: No
+Bailable: Yes
+BNS equivalent: 318(3)
+
+--- IPC SECTION 419 — Punishment for cheating by personation ---
+Plain-language meaning: Punishes cheating by pretending to be someone else (impersonation), whether a real person or a fictitious one.
+Punishment: Up to 3 years, or fine, or both
+Cognizable: Yes
+Bailable: Yes
+BNS equivalent: 319(2)
+
+--- IPC SECTION 420 — Cheating and dishonestly inducing delivery of property ---
+Plain-language meaning: The most commonly invoked cheating provision — punishes cheating that dishonestly induces the victim to deliver property to any person, or to alter/destroy a valuable security.
+Punishment: Up to 7 years and fine
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 318(4)
+
+--- IPC SECTION 425 — Mischief ---
+Plain-language meaning: Defines mischief as causing wrongful loss or damage to property (or to the public), with intent to cause such loss/damage or knowledge that it is likely. This is a definition section — see 426 for punishment.
+Punishment: None (definition only)
+Cognizable: N/A (definition section)
+Bailable: N/A (definition section)
+BNS equivalent: 324(1)
+
+--- IPC SECTION 426 — Punishment for mischief ---
+Plain-language meaning: Punishes mischief as defined in Section 425.
+Punishment: Up to 3 months, or fine, or both
+Cognizable: No
+Bailable: Yes
+BNS equivalent: 324(2)
+
+--- IPC SECTION 427 — Mischief causing damage to the amount of fifty rupees ---
+Plain-language meaning: A more serious form of mischief, causing damage or loss valued at fifty rupees or more (a threshold set when the IPC was drafted, so in practice this covers most real property-damage cases).
+Punishment: Up to 2 years, or fine, or both
+Cognizable: No
+Bailable: Yes
+BNS equivalent: 324(3)
+
+--- IPC SECTION 435 — Mischief by fire or explosive substance with intent to cause damage ---
+Plain-language meaning: Punishes mischief committed using fire or an explosive substance, intending to cause (or knowing it is likely to cause) damage of ₹100 or more (₹1,000 or more for agricultural produce).
+Punishment: Up to 7 years and fine
+Cognizable: Yes
+Bailable: Yes
+BNS equivalent: 324(6)
+
+--- IPC SECTION 447 — Punishment for criminal trespass ---
+Plain-language meaning: Punishes entering (or unlawfully remaining on) another person's property with intent to commit an offence, intimidate, insult, or annoy them.
+Punishment: Up to 3 months, or fine up to ₹500, or both
+Cognizable: Yes
+Bailable: Yes
+BNS equivalent: 329(3)
+
+--- IPC SECTION 448 — Punishment for house-trespass ---
+Plain-language meaning: A more serious form of criminal trespass, where the trespass is into a building used as a dwelling or for property custody.
+Punishment: Up to 1 year, or fine up to ₹1,000, or both
+Cognizable: Yes
+Bailable: Yes
+BNS equivalent: 329(4)
+
+--- IPC SECTION 449 — House-trespass in order to commit offence punishable with death ---
+Plain-language meaning: House-trespass committed specifically to carry out an offence that carries the death penalty.
+Punishment: Life imprisonment, or rigorous imprisonment up to 10 years, and fine
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 331(1)
+
+--- IPC SECTION 450 — House-trespass in order to commit offence punishable with imprisonment for life ---
+Plain-language meaning: House-trespass committed specifically to carry out an offence punishable with life imprisonment.
+Punishment: Up to 10 years and fine
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 331(2)
+
+--- IPC SECTION 454 — Lurking house-trespass or house-breaking in order to commit offence punishable with imprisonment ---
+Plain-language meaning: Punishes covertly entering a dwelling (lurking house-trespass) or breaking into one, intending to commit an offence punishable with imprisonment.
+Punishment: Up to 3 years and fine
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 331(4)
+
+--- IPC SECTION 457 — Lurking house-trespass or house-breaking by night in order to commit offence punishable with imprisonment ---
+Plain-language meaning: The night-time, more serious version of Section 454.
+Punishment: Up to 5 years and fine
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 331(5)
+
+--- IPC SECTION 463 — Forgery ---
+Plain-language meaning: Defines forgery as making a false document or false electronic record with the intent to cause damage, support a false claim, or commit fraud. This is a definition section — see 465 for punishment.
+Punishment: None (definition only)
+Cognizable: N/A (definition section)
+Bailable: N/A (definition section)
+BNS equivalent: 335
+
+--- IPC SECTION 464 — Making a false document or false electronic record ---
+Plain-language meaning: Explains what counts as 'making' a false document — e.g. dishonestly creating, altering, or signing a document to make it appear as something it is not.
+Punishment: None (definition only)
+Cognizable: N/A (definition section)
+Bailable: N/A (definition section)
+BNS equivalent: 336
+
+--- IPC SECTION 465 — Punishment for forgery ---
+Plain-language meaning: Punishes forgery as defined in Section 463.
+Punishment: Up to 2 years, or fine, or both
+Cognizable: No
+Bailable: Yes
+BNS equivalent: 336(2)
+
+--- IPC SECTION 467 — Forgery of valuable security, will, etc. ---
+Plain-language meaning: A more serious forgery offence, involving a valuable security, a will, or an authorization to transfer/receive property.
+Punishment: Life imprisonment, or up to 10 years, and fine
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 338
+
+--- IPC SECTION 468 — Forgery for purpose of cheating ---
+Plain-language meaning: Punishes forgery committed specifically with the intent that the false document be used to cheat someone.
+Punishment: Up to 7 years and fine
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 336(3)
+
+--- IPC SECTION 471 — Using as genuine a forged document or electronic record ---
+Plain-language meaning: Punishes knowingly using a forged document as if it were genuine — treated the same as forging it in the first place.
+Punishment: Same as for forgery of that document (up to the punishment provided under 465/467/468 as applicable)
+Cognizable: Depends on the type of document forged
+Bailable: Depends on the type of document forged
+BNS equivalent: 340
+
+--- IPC SECTION 494 — Marrying again during lifetime of husband or wife ---
+Plain-language meaning: Punishes bigamy — marrying again while a spouse from an earlier, still-valid marriage is alive, unless that earlier marriage has been declared void or dissolved.
+Punishment: Up to 7 years and fine
+Cognizable: No
+Bailable: Yes
+BNS equivalent: 82(1)
+
+--- IPC SECTION 498 — Enticing or taking away or detaining with criminal intent a married woman ---
+Plain-language meaning: Punishes taking, enticing, or concealing a married woman with the intent of having illicit intercourse with her, knowing or having reason to believe she is another man's wife.
+Punishment: Up to 2 years, or fine, or both
+Cognizable: No
+Bailable: Yes
+BNS equivalent: 84
+
+--- IPC SECTION 498A — Cruelty by husband or relatives of husband ---
+Plain-language meaning: Punishes subjecting a married woman to cruelty — wilful conduct likely to drive her to suicide/grave injury, or harassment connected to a demand for dowry — by her husband or his relatives.
+Punishment: Up to 3 years and fine
+Cognizable: Yes
+Bailable: No
+BNS equivalent: 85
+
+--- IPC SECTION 499 — Defamation ---
+Plain-language meaning: Defines defamation as making or publishing an imputation about a person, intending to harm (or knowing it is likely to harm) their reputation. This is a definition section — see 500 for punishment.
+Punishment: None (definition only)
+Cognizable: N/A (definition section)
+Bailable: N/A (definition section)
+BNS equivalent: 356(1)
+
+--- IPC SECTION 500 — Punishment for defamation ---
+Plain-language meaning: Punishes defamation as defined in Section 499.
+Punishment: Up to 2 years, or fine, or both
+Cognizable: No
+Bailable: Yes
+BNS equivalent: 356(2)
+
+--- IPC SECTION 503 — Criminal intimidation ---
+Plain-language meaning: Defines criminal intimidation as threatening someone with injury to their person, reputation, or property (or to someone they care about), to alarm them or force them to do/not do something they're legally entitled to do/refuse. This is a definition section — see 506 for punishment.
+Punishment: None (definition only)
+Cognizable: N/A (definition section)
+Bailable: N/A (definition section)
+BNS equivalent: 351(1)
+
+--- IPC SECTION 504 — Intentional insult with intent to provoke breach of the peace ---
+Plain-language meaning: Punishes intentionally insulting someone in a way that is meant to (or is likely to) provoke them into breaking the public peace or committing another offence.
+Punishment: Up to 2 years, or fine, or both
+Cognizable: Yes
+Bailable: Yes
+BNS equivalent: 352
+
+--- IPC SECTION 506 — Punishment for criminal intimidation ---
+Plain-language meaning: Punishes criminal intimidation as defined in Section 503.
+Punishment: Up to 2 years, or fine, or both (up to 7 years if the threat is to cause death/grievous hurt, or to destroy property by fire, or of an offence punishable with death/life imprisonment)
+Cognizable: No (Yes for the aggravated 7-year form)
+Bailable: Yes (No for the aggravated 7-year form)
+BNS equivalent: 351(2)-(3)
+
+--- IPC SECTION 507 — Criminal intimidation by an anonymous communication ---
+Plain-language meaning: An aggravated form of criminal intimidation where the threat is made anonymously, or the sender conceals their identity.
+Punishment: Up to 2 years, in addition to the punishment under 506
+Cognizable: No
+Bailable: Yes
+BNS equivalent: 351(4)
+
+--- IPC SECTION 509 — Word, gesture or act intended to insult the modesty of a woman ---
+Plain-language meaning: Punishes any word, sound, gesture, or act intended to insult a woman's modesty, or intrude on her privacy.
+Punishment: Up to 3 years and fine
+Cognizable: Yes
+Bailable: Yes
+BNS equivalent: 79
+
+==============================================================================
+PART 2: PROCEDURAL CONCEPTS
+==============================================================================
+
+--- CONCEPT: FIR (First Information Report) ---
+An FIR is the written record a police station prepares when it first receives information about the commission of a cognizable offence (Section 154 CrPC / Section 173 BNSS). It sets the criminal investigation in motion — the informant's statement is recorded, read back to them, signed, and a copy is given to them free of cost. An FIR can only be registered for a cognizable offence; for a non-cognizable offence, the police record it in a different register (the NC/non-cognizable report) and cannot investigate without a magistrate's order.
+
+--- CONCEPT: Zero FIR ---
+A Zero FIR is an FIR registered by any police station, regardless of where the offence actually occurred or which station has jurisdiction over that area. It is given a temporary '0' serial number and is later transferred to the police station that does have jurisdiction, which then re-registers it under its own regular serial number. This exists so a victim is never turned away just because they walked into the 'wrong' police station — the police are legally required to register it and forward it, not redirect the complainant elsewhere first.
+
+--- CONCEPT: Chargesheet ---
+A chargesheet (formally the 'police report' under Section 173 CrPC / Section 193 BNSS) is the final investigation report the police file in court once they complete their investigation. It lists the evidence gathered, the accused persons, and the specific offences the police believe are made out. Filing a chargesheet is what moves a case from the investigation stage to the trial stage before a magistrate/court. If the investigation finds no case is made out, the police instead file a 'B Report' (closure report) rather than a chargesheet.
+
+--- CONCEPT: Cognizable offence ---
+A cognizable offence is one for which the police can arrest a person without a warrant and start an investigation without needing prior permission from a magistrate. These are generally the more serious offences (e.g. murder, rape, robbery). Whether a specific IPC/BNS section is cognizable or not is fixed by the First Schedule to the CrPC (now the BNSS) — it does not depend on the facts of a particular case.
+
+--- CONCEPT: Non-cognizable offence ---
+A non-cognizable offence is one for which the police cannot arrest without a warrant, and cannot investigate without a magistrate's permission. These are generally less serious offences (e.g. simple hurt, defamation). A complaint about a non-cognizable offence is recorded by the police in an NC register, but the complainant is directed to approach a magistrate directly if they want an investigation or prosecution to proceed.
+
+--- CONCEPT: Difference between cognizable and non-cognizable offences ---
+The core difference is police power to act on their own: for a cognizable offence, the police can arrest without a warrant and start investigating immediately on their own authority (an FIR is registered). For a non-cognizable offence, the police cannot arrest without a warrant and cannot investigate without a magistrate's order — they only record the complaint (as an NC entry) and the complainant must approach a magistrate for the case to move forward. Generally, more serious offences (murder, rape, robbery) are cognizable, and less serious ones (simple hurt, defamation) are non-cognizable — the classification for each section is fixed by the First Schedule to the CrPC/BNSS, not decided case by case.
+
+--- CONCEPT: Bailable offence ---
+A bailable offence is one where bail is a matter of right — if the accused is willing to furnish bail, the police officer or the court is legally bound to release them. These are generally less serious offences.
+
+--- CONCEPT: Non-bailable offence ---
+A non-bailable offence is one where bail is not a matter of right — it is granted or refused at the discretion of the court, based on factors like the severity of the offence, risk of the accused fleeing or tampering with evidence, and their criminal history. These are generally more serious offences.
+
+--- CONCEPT: Anticipatory bail ---
+Anticipatory bail (Section 438 CrPC / Section 482 BNSS) is bail sought in advance of arrest, by a person who has reason to believe they may be arrested for a non-bailable offence. If granted by the Sessions Court or High Court, it directs that the person be released on bail if and when they are actually arrested, rather than having to apply for bail only after arrest.
+
+--- CONCEPT: Remand ---
+Remand is a magistrate's order sending an arrested person into further custody while the investigation continues, because it cannot be completed within the initial 24-hour period the police are allowed to hold someone without judicial authorization. Remand can be 'police custody' (the accused stays with the police, generally for a limited window early in the investigation) or 'judicial custody' (the accused is sent to jail while the case continues).
+
+--- CONCEPT: NBW (Non-Bailable Warrant) ---
+An NBW is a warrant issued by a court directing the police to arrest a person and produce them before the court, without giving the person the option of release on bail at the point of arrest — bail can only be sought afterward, from the court. It's typically issued when a person fails to appear in court despite being summoned, or is deliberately evading appearance.
+
+--- CONCEPT: Bailable warrant ---
+A bailable warrant directs the police to arrest a person, but allows them to be released immediately on furnishing bail (as specified in the warrant) rather than being kept in custody until produced before the court. It is typically used for less serious cases of non-appearance than an NBW.
+
+--- CONCEPT: Panchnama ---
+A panchnama is a written record, prepared by the investigating officer in the presence of independent local witnesses ('panchas'), documenting what was observed or seized during an investigative act — most commonly a scene-of-crime inspection, a search, or a seizure of property/evidence. The panchas sign the document to independently attest that its contents accurately reflect what took place, which helps the evidence stand up to scrutiny in court.
+
+--- CONCEPT: Panchanama witness ---
+A 'panch' (plural: panchas) is an independent, disinterested local person the investigating officer brings in to witness and sign a panchnama — their role is to give the record credibility by confirming, from outside the police, that the seizure/inspection happened as documented.
+
+--- CONCEPT: Inquest ---
+An inquest (Section 174 CrPC / Section 194 BNSS) is the police procedure for recording the apparent cause of an unnatural, suicidal, or suspicious death — noting the condition of the body and any marks of injury — before the body is sent for post-mortem examination. It is distinct from a chargesheet; it simply documents the circumstances of the death for the record and to guide further investigation.
+
+--- CONCEPT: Chargesheet types (A, B, C summary) ---
+Police investigations typically close in one of a few standard ways: an 'A' final report (a genuine chargesheet — enough evidence found, the case is sent for trial), a 'B' final report (the case is found to be false/mistake of fact, and closed without trial), or a 'C' final report (the offence occurred but the offender could not be traced/identified, so the case is closed as undetected, though it can be reopened if new evidence emerges).
+
+--- CONCEPT: Cognizance ---
+A magistrate 'takes cognizance' of an offence when they formally apply their judicial mind to the facts of a case (usually on a police report or a private complaint) to decide whether to proceed further, such as issuing process against the accused. This is a distinct legal step from an FIR being registered or an investigation being conducted — it's the point where the matter moves into the court's own hands.
+
+--- CONCEPT: Section 41 CrPC / arrest without warrant ---
+Section 41 CrPC (now Section 35 BNSS) lays out the conditions under which a police officer may arrest a person without a warrant — generally for cognizable offences, or where there is credible information/reasonable suspicion the person committed one, subject to the officer recording their reasons in writing, particularly for offences punishable with up to 7 years.
+
+--- CONCEPT: Complainant vs accused vs victim ---
+The complainant is the person who reports the offence to the police (they may or may not be the victim themselves — e.g. a family member or witness can file the complaint). The victim is the person who actually suffered the harm from the offence. The accused is the person named or identified as having committed the offence; they remain 'accused' — not convicted — until a court finds them guilty at the end of a trial.

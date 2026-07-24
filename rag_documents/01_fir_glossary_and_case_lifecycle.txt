@@ -1,0 +1,84 @@
+KSP FIR SYSTEM — GLOSSARY AND CASE LIFECYCLE
+(Reference knowledge for the KSP Intelligent Crime Analytics Chatbot)
+
+1. CASE CATEGORIES (CaseCategory table)
+The Karnataka Police system registers cases under four categories, each identified
+by a 1-digit prefix in the CrimeNo:
+- FIR (First Information Report) — prefix 1 — registered when a cognizable offence
+  is reported; this is the standard case type that triggers a full investigation.
+- UDR (Unnatural Death Report) — prefix 3 — registered when a death occurs under
+  unnatural or unexplained circumstances and it is not yet clear whether a crime
+  was committed.
+- Zero FIR — prefix 8 — an FIR registered at any police station regardless of
+  jurisdiction, to be transferred later to the station with actual jurisdiction.
+  Used so a victim is never turned away for filing at the "wrong" station.
+- PAR (Preliminary/Property/Arrest Report, station-specific usage) — prefix 4 —
+  used for cases that do not require a full FIR but still need to be logged.
+
+2. CRIME NUMBER (CrimeNo) FORMAT
+CrimeNo is an 18-digit code with no separators:
+  [1-digit Case Category] + [4-digit District ID] + [4-digit Police Station/Unit ID]
+  + [4-digit Year] + [5-digit running serial number]
+Example: 104430006202600001
+  1     = FIR
+  0443  = District ID
+  0006  = Police Station (Unit) ID
+  2026  = Year
+  00001 = Serial number (resets per station, per category, per year)
+
+CaseNo is simply the last 9 digits of CrimeNo (Year + 5-digit serial), e.g. 202600001.
+
+3. GRAVITY OF OFFENCE (GravityOffence table)
+Every case is classified as:
+- Heinous — serious offences (e.g. murder, rape, dacoity) that receive priority
+  investigation attention and stricter monitoring.
+- Non-Heinous — lesser offences (e.g. petty theft, minor disputes).
+
+4. CASE STATUS (CaseStatusMaster table)
+A case moves through these statuses over its lifecycle:
+- Under Investigation — active, investigating officer is still gathering evidence.
+- Charge Sheeted — investigation complete, a chargesheet has been filed in court.
+- Closed — case concluded (chargesheeted-and-disposed, or closed as false/undetected).
+
+5. CHARGESHEET FINAL REPORT TYPES (ChargesheetDetails.cstype)
+When an investigation concludes, the final report is classified as one of:
+- A = Chargesheet — sufficient evidence found, case sent to court for trial.
+- B = False Case — investigation determined the complaint was false/unfounded.
+- C = Undetected — investigation could not identify the offender(s); case remains open
+  in records but no chargesheet is filed.
+
+6. PEOPLE INVOLVED IN A CASE
+- Complainant — the person who reported the incident to police (ComplainantDetails).
+- Victim — the person who suffered harm (Victim); may or may not be the same as
+  the complainant. Victims are tagged with GenderID values m/f/t.
+- Accused — the person(s) alleged to have committed the offence (Accused).
+  Each accused gets a display code A1, A2, A3... (PersonID) for readability in
+  reports and charts. GenderID for accused uses M/F/T (uppercase).
+- Investigating Officer (IO) — the Employee assigned to investigate; recorded via
+  PolicePersonID on CaseMaster and IOID on ArrestSurrender.
+
+7. ARREST VS SURRENDER
+An accused person is linked to a case via an ArrestSurrender event, which records:
+- Whether they were arrested by police or voluntarily surrendered.
+- The date, and the state/district/police station where it happened.
+- Which court they were produced before.
+- Two flags: IsAccused (are they the primary accused in this case) and
+  IsComplainantAccused (is the original complainant also named as an accused,
+  e.g. in cross-cases).
+One arrest/surrender event can, through a junction table, link to multiple accused
+persons (e.g. a group arrest).
+
+8. ACTS AND SECTIONS
+Every case can invoke one or more legal Act + Section combinations (e.g. "IPC
+Section 302"), recorded in ActSectionAssociation with a display order for
+printing on the FIR copy. Acts (e.g. IPC, NDPS, BNS) are the parent law; Sections
+are the specific numbered provisions within that act. Crime heads (major
+categories like "Crimes Against Body") and crime sub-heads (specific crime types
+like "Murder", "Robbery") are separately classified and linked to typical
+act-sections via a mapping table, for classification/reporting purposes.
+
+9. GEOGRAPHY AND ORGANIZATION HIERARCHY
+State → District → Unit (police station / circle office, has a parent-unit
+hierarchy) → Employee (posted with a Rank such as Constable/Inspector/DSP and
+a Designation such as Investigating Officer/SHO). Courts are also linked to a
+District and State, and cases/arrests reference the specific court handling them.
