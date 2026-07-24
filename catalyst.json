@@ -1,0 +1,17 @@
+{
+  "appsail": [
+    {
+      "source": ".",
+      "name": "ksp-backend"
+    }
+  ],
+  "client": {
+    "source": "frontend/dist",
+    "scripts": {
+      "predeploy": "cd ../.. && npm --prefix frontend run build && cp frontend/dist/index.html frontend/dist/404.html"
+    }
+  },
+  "apig": {
+    "enabled": false
+  }
+}

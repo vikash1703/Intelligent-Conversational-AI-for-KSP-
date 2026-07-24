@@ -1,0 +1,41 @@
+# Secrets — never commit real credentials
+.env
+app-config.json
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+
+# Catalyst CLI (installed locally at the repo root to avoid a global sudo
+# install — see deployment notes) — tooling, not project source
+node_modules/
+/package.json
+/package-lock.json
+.catalystrc
+.catalyst/
+
+# Local data/artifacts
+temp_reports/
+data/cache/
+chroma_db/
+chroma_data/
+*.log
+
+# Sensitive/real-looking crime data — never commit
+case_master.csv
+scripts/accused_name_backup.json
+scripts/casemaster_id_mapping.csv
+
+# OS junk
+.DS_Store
+**/.DS_Store
+
+# Local Claude Code settings — contains a live Admin bearer token in the
+# permission allowlist history, never commit
+.claude/settings.local.json

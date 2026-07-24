@@ -1,0 +1,32 @@
+{
+  "command": "sh -c \"PYTHONPATH=./vendor_deps python3 -m uvicorn main:app --host 0.0.0.0 --port $X_ZOHO_CATALYST_LISTEN_PORT\"",
+  "build_path": "./",
+  "stack": "python_3_12",
+  "env_variables": {
+    "ZOHO_ORG_ID": "your-catalyst-org-id",
+    "ZOHO_PROJECT_ID": "your-catalyst-project-id",
+    "ZOHO_RAG_ENDPOINT": "https://your-catalyst-rag-endpoint",
+    "ZOHO_DOCUMENT_IDS": "comma,separated,document,ids",
+    "ZIA_TRANSLATE_ENDPOINT": "https://your-catalyst-zia-endpoint",
+    "ZOHO_CLIENT_ID": "your-zoho-client-id",
+    "ZOHO_CLIENT_SECRET": "your-zoho-client-secret",
+    "ZOHO_REFRESH_TOKEN": "your-zoho-refresh-token",
+    "JWT_SECRET_KEY": "change-me-to-a-long-random-string",
+    "JWT_ALGORITHM": "HS256",
+    "JWT_EXPIRE_MINUTES": "480",
+    "APP_USER_TABLE": "AppUser",
+    "AUDIT_LOG_TABLE": "AuditLog",
+    "CHAT_HISTORY_TABLE": "ChatHistory",
+    "ELEVENLABS_API_KEY": "your-elevenlabs-api-key",
+    "GROQ_API_KEY": "your-groq-api-key",
+    "GROQ_MODEL": "llama-3.3-70b-versatile",
+    "GEMINI_API_KEY": "your-gemini-api-key",
+    "GEMINI_MODEL": "gemini-flash-lite-latest",
+    "HF_HUB_OFFLINE": "0",
+    "ALLOWED_ORIGINS": ""
+  },
+  "memory": 2048,
+  "scripts": {
+    "predeploy": "python3 -m pip install --upgrade --target ./vendor_deps --platform manylinux2014_x86_64 --python-version 3.12 --implementation cp --abi cp312 --only-binary=:all: --no-input -r requirements-deploy.txt"
+  }
+}
