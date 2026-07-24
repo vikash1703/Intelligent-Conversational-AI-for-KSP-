@@ -1,0 +1,42 @@
+from fastapi import APIRouter, Depends, Query
+from schemas.auth_dto import CurrentUser
+from services.scoring_service import (
+    get_repeat_offenders, get_offender_risk_score, get_early_warning_alerts, get_alert_top_districts,
+)
+from core.exceptions import AppException
+from core.security import get_current_user
+
+router = APIRouter()
+
+
+@router.get("/repeat-offenders")
+def repeat_offenders(
+    min_case_count: int = Query(2, ge=2),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    return get_repeat_offenders(min_case_count=min_case_count)
+
+
+@router.get("/risk-score")
+def risk_score(name: str, current_user: CurrentUser = Depends(get_current_user)):
+    result = get_offender_risk_score(name)
+    if not result:
+        raise AppException(f"No accused found matching '{name}'", status_code=404)
+    return result
+
+
+@router.get("/early-warnings")
+def early_warnings(
+    recent_days: int = Query(30, ge=1, le=365),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    return get_early_warning_alerts(recent_days=recent_days)
+
+
+@router.get("/early-warnings/districts")
+def early_warning_districts(
+    crime_type: str,
+    recent_days: int = Query(30, ge=1, le=365),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    return get_alert_top_districts(crime_type, recent_days=recent_days)
