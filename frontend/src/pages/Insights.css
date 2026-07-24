@@ -1,0 +1,265 @@
+.ins-page {
+  height: 100%;
+  overflow-y: auto;
+  padding: 20px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.ins-page section {
+  margin-bottom: 28px;
+}
+
+.ins-page h2 {
+  font-size: 15px;
+  margin: 0 0 10px;
+  color: var(--ink);
+}
+
+.ins-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.ins-form input {
+  flex: 1;
+  max-width: 420px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.ins-form button {
+  padding: 0 16px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent-fill);
+  color: #fff;
+  font-weight: 650;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.ins-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.ins-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px 16px;
+}
+
+.ins-card h3 {
+  font-size: 12.5px;
+  margin: 0 0 8px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+
+.ins-note { color: var(--muted); font-size: 12.5px; margin: 0; }
+
+.ins-error {
+  color: var(--crit);
+  background: var(--crit-bg);
+  font-size: 12px;
+  padding: 6px 8px;
+  border-radius: 6px;
+}
+
+.ins-text {
+  font-size: 13px;
+  color: var(--ink);
+  line-height: 1.55;
+  margin: 0 0 8px;
+  white-space: pre-wrap;
+}
+
+.ins-series-flag {
+  color: var(--crit);
+  font-weight: 650;
+}
+
+.ins-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.ins-tag {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  background: var(--surface-2);
+  border-radius: 999px;
+  padding: 3px 9px;
+  color: var(--muted);
+}
+
+.ins-tag-clickable {
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: border-color .12s ease, color .12s ease;
+}
+
+.ins-tag-clickable:hover,
+.ins-tag-clickable:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+  outline: none;
+}
+
+.ins-action-btn {
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 650;
+  padding: 6px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+.ins-action-btn:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.ins-info-tip {
+  position: relative;
+  display: inline-flex;
+  margin-left: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: help;
+  outline: none;
+  vertical-align: middle;
+}
+
+.ins-info-tip:hover,
+.ins-info-tip:focus-visible {
+  color: var(--accent);
+}
+
+.ins-tooltip-bubble {
+  position: absolute;
+  z-index: 30;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px);
+  width: 240px;
+  background: var(--ink);
+  color: var(--surface);
+  font-size: 11.5px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: normal;
+  line-height: 1.45;
+  padding: 8px 10px;
+  border-radius: 7px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .12s ease;
+}
+
+.ins-info-tip:hover .ins-tooltip-bubble,
+.ins-info-tip:focus-visible .ins-tooltip-bubble {
+  opacity: 1;
+  visibility: visible;
+}
+
+.ins-autocomplete {
+  position: relative;
+  flex: 1;
+  max-width: 420px;
+}
+
+.ins-autocomplete input {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.ins-autocomplete-list {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  max-height: 260px;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.ins-autocomplete-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 9px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.ins-autocomplete-item.active,
+.ins-autocomplete-item:hover {
+  background: var(--surface-2);
+}
+
+.ins-autocomplete-count {
+  font-size: 10.5px;
+  color: var(--muted);
+  flex: none;
+}
+
+.ins-autocomplete-note {
+  padding: 7px 9px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.ins-citations {
+  margin-top: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 6px;
+}
+
+.ins-citations summary {
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.ins-citation {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+@media (max-width: 700px) {
+  .ins-grid { grid-template-columns: 1fr; }
+}

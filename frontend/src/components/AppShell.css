@@ -1,0 +1,241 @@
+.shell {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.shell-mobile-only { display: none; }
+.shell-desktop-only { display: flex; }
+
+/* ---------- Desktop top bar ---------- */
+.shell-topbar {
+  flex: none;
+  height: 60px;
+  align-items: center;
+  gap: 28px;
+  padding: 0 20px;
+  background: var(--accent-fill-strong);
+  color: #fff;
+  box-shadow: var(--shadow);
+  z-index: 10;
+}
+
+.shell-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+  color: var(--gold);
+}
+
+.shell-brand-title {
+  display: block;
+  font-weight: 750;
+  font-size: 14.5px;
+  color: #fff;
+}
+
+.shell-brand-sub {
+  display: block;
+  font-size: 10px;
+  color: rgba(255, 255, 255, .55);
+  font-weight: 500;
+}
+
+.shell-nav {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+  /* Without min-width: 0, a flex item refuses to shrink past its content's
+     natural width — with 9 nowrap links, that pushes the whole topbar wider
+     than the viewport instead of this nav scrolling on its own, shoving the
+     language switcher/user info/sign-out off-screen. Kannada's longer glyph
+     widths make this overflow trigger far more often than English does, and
+     any narrower window makes it worse — this fixes it at any width. */
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.shell-nav::-webkit-scrollbar {
+  height: 4px;
+}
+
+.shell-nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, .25);
+  border-radius: 4px;
+}
+
+.shell-nav a {
+  color: rgba(255, 255, 255, .65);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 13px;
+  border-radius: 7px;
+  white-space: nowrap;
+}
+
+.shell-nav a:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, .08);
+}
+
+.shell-nav a.active {
+  color: var(--accent-fill-strong);
+  background: var(--gold);
+}
+
+.shell-lang-switch {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(255, 255, 255, .08);
+  border-radius: 8px;
+  padding: 2px;
+  flex: none;
+}
+
+.shell-lang-switch button {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, .65);
+  font-size: 11.5px;
+  font-weight: 650;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.shell-lang-switch button:hover {
+  color: #fff;
+}
+
+.shell-lang-switch button.active {
+  background: var(--gold);
+  color: var(--accent-fill-strong);
+}
+
+.shell-lang-switch-compact {
+  background: rgba(255, 255, 255, .1);
+}
+
+.shell-lang-switch-compact button {
+  color: rgba(255, 255, 255, .7);
+  font-size: 10.5px;
+  padding: 4px 7px;
+}
+
+.shell-lang-switch-compact button.active {
+  color: var(--accent-fill-strong);
+}
+
+.shell-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+
+.shell-user-name { font-weight: 650; }
+
+.shell-user-role {
+  color: var(--gold);
+  text-transform: uppercase;
+  font-size: 10.5px;
+  letter-spacing: .04em;
+  border: 1px solid rgba(255, 255, 255, .25);
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+
+.shell-user button {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, .6);
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+
+.shell-body {
+  flex: 1;
+  min-height: 0;
+}
+
+/* ---------- Mobile top bar ---------- */
+.shell-mobile-topbar {
+  flex: none;
+  height: 64px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  background: var(--accent-fill-strong);
+  color: var(--gold);
+  box-shadow: var(--shadow);
+  z-index: 10;
+}
+
+.shell-mobile-brand {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.shell-mobile-bell,
+.shell-mobile-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .1);
+  color: #fff;
+  flex: none;
+}
+
+.shell-mobile-avatar {
+  background: var(--gold);
+  color: var(--accent-fill-strong);
+}
+
+/* ---------- Mobile bottom tab bar ---------- */
+/* No `display` here on purpose — .shell-mobile-only (same specificity, defined
+   earlier) owns show/hide via the media query below; setting it here too would
+   win the cascade by source order and defeat the desktop hide rule regardless of
+   viewport (confirmed live: the tab bar rendered on a 1500px-wide desktop view). */
+.shell-tabbar {
+  flex: none;
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+  z-index: 10;
+}
+
+.shell-tabbar a {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 2px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 10.5px;
+  font-weight: 600;
+  border-radius: 10px;
+}
+
+.shell-tabbar a.active {
+  color: var(--accent);
+}
+
+@media (max-width: 860px) {
+  .shell-desktop-only { display: none; }
+  .shell-mobile-only { display: flex; }
+}

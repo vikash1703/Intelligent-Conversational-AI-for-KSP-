@@ -1,0 +1,148 @@
+.an-page {
+  height: 100%;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.an-stat-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  max-width: 1200px;
+  margin-bottom: 16px;
+}
+
+.an-stat-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px 16px;
+}
+
+.an-stat-card span {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.an-stat-card b {
+  font-size: 22px;
+  color: var(--ink);
+}
+
+.an-stat-card b.warn {
+  color: var(--crit);
+}
+
+.an-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  max-width: 1200px;
+}
+
+@media (max-width: 700px) {
+  .an-stat-cards { grid-template-columns: repeat(2, 1fr); }
+  .an-grid { grid-template-columns: 1fr; }
+}
+
+.an-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+
+.an-card h3 {
+  font-size: 13px;
+  margin: 0 0 12px;
+  color: var(--ink);
+}
+
+.an-note {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.an-error {
+  color: var(--crit);
+  background: var(--crit-bg);
+  font-size: 12px;
+  padding: 6px 8px;
+  border-radius: 6px;
+}
+
+.an-split {
+  display: flex;
+}
+
+.an-table {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.an-row {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr auto;
+  gap: 8px;
+  align-items: center;
+  font-size: 12.5px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  background: var(--surface-2);
+  width: 100%;
+  border: 1px solid transparent;
+  font-family: inherit;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.an-row:hover {
+  border-color: var(--accent);
+}
+
+.an-hint {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 8px 0 0;
+}
+
+.an-row-spike {
+  background: var(--crit-bg);
+}
+
+.an-spike-tag {
+  font-weight: 700;
+  color: var(--crit);
+  font-size: 11px;
+}
+
+.an-normal-tag {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.an-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.an-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--surface-2);
+  border-radius: 7px;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.an-stat span {
+  color: var(--muted);
+}
