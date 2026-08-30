@@ -138,9 +138,9 @@ All configuration lives in `.env` at the project root (never commit this file �
 | Variable | Purpose |
 |---|---|
 | `ZOHO_ORG_ID`, `ZOHO_PROJECT_ID` | Catalyst project identifiers |
-| `ZOHO_CLIENT_ID`, `ZOHO_CLIENT_SECRET`, `ZOHO_REFRESH_TOKEN` | OAuth credentials for the Catalyst Data API |
+| `ZIA_OAUTH_CLIENT_ID`, `ZIA_OAUTH_CLIENT_SECRET`, `ZIA_OAUTH_REFRESH_TOKEN` | OAuth credentials for the Catalyst Data API (named off the `ZOHO_` prefix — Catalyst AppSail's deploy rejects `ZOHO_CLIENT_ID`/`ZOHO_CLIENT_SECRET`/`ZOHO_REFRESH_TOKEN` as reserved keywords) |
 | `ZOHO_RAG_ENDPOINT`, `ZOHO_DOCUMENT_IDS`, `ZIA_TRANSLATE_ENDPOINT` | Zia's hosted RAG/translation endpoints |
-| `CATALYST_ENVIRONMENT` | `Development` or `Production` — which Catalyst environment to query |
+| `APP_CATALYST_ENV` | `Development` or `Production` — which Catalyst environment to query (named off `CATALYST_ENVIRONMENT`, also rejected as a reserved AppSail keyword) |
 | `JWT_SECRET_KEY`, `JWT_ALGORITHM`, `JWT_EXPIRE_MINUTES` | App-level auth token signing |
 | `GROQ_API_KEY`, `GROQ_MODEL` | Fast classification provider (free tier at console.groq.com) |
 | `GEMINI_API_KEY`, `GEMINI_MODEL` | Primary answer-composition provider (free tier at aistudio.google.com) |

@@ -1,7 +1,8 @@
 import logging
 import math
+from datetime import datetime
 
-from core.catalyst_client import execute_zcql, zcql_escape
+from core.catalyst_client import execute_zcql, zcql_escape, fetch_all_rows
 from services.analytics_service import extract_crime_type
 from services.network_service import get_network_for_accused
 from chat.llm_provider import rag_answer_with_failover
@@ -15,6 +16,18 @@ logger = logging.getLogger("SimilarityService")
 # bounded regardless of how many cases share a crime_type (e.g. ~700-800 each in
 # the live data) and keeps the ranking itself deterministic/auditable.
 _CANDIDATE_PAGE_SIZE = 300
+# REAL BUG FIXED 2026-08-23 (codebase-wide pagination audit): this used to be a
+# single LIMIT 300 query, then sorted by distance and sliced to top N — meaning
+# "most similar case" was only ever chosen from an arbitrary first-300-in-ZCQL-
+# order subset of a crime type's real ~700-800 cases, not the true nearest.
+# Exactly the same class of bug the Financial Intelligence page's
+# list_suspicious_transactions had (sort applied AFTER a truncating LIMIT).
+# Fixed by paginating through every same-crime_type candidate before sorting —
+# via core.catalyst_client.fetch_all_rows' cursor pagination, not offset-based
+# (see its own docstring: offset pagination can silently drop a real
+# candidate even with dedup, which a plain sort-after-limit fix would have
+# reintroduced in a different form).
+_CANDIDATE_MAX_PAGES = 10
 
 
 def _distance_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -36,15 +49,17 @@ def find_similar_cases(crime_no: str, limit: int = 5) -> dict | None:
     target_crime_type = extract_crime_type(target.get("BriefFacts"))
     target_lat, target_lon = target.get("latitude"), target.get("longitude")
 
-    candidate_rows = execute_zcql(
-        "SELECT CaseMaster.CrimeNo, CaseMaster.BriefFacts, CaseMaster.latitude, CaseMaster.longitude "
-        f"FROM CaseMaster WHERE CaseMaster.BriefFacts = '{zcql_escape(target.get('BriefFacts', ''))}' "
-        f"AND CaseMaster.CrimeNo != '{safe_crime_no}' LIMIT {_CANDIDATE_PAGE_SIZE}"
+    # Every candidate, not just the first 300 in ZCQL's own order (see
+    # _CANDIDATE_MAX_PAGES comment above).
+    candidates = fetch_all_rows(
+        "CaseMaster", ["CrimeNo", "latitude", "longitude"],
+        f" WHERE CaseMaster.BriefFacts = '{zcql_escape(target.get('BriefFacts', ''))}' "
+        f"AND CaseMaster.CrimeNo != '{safe_crime_no}'",
+        page_size=_CANDIDATE_PAGE_SIZE, max_pages=_CANDIDATE_MAX_PAGES,
     )
 
     scored = []
-    for r in candidate_rows:
-        row = r.get("CaseMaster", r)
+    for row in candidates:
         if row.get("latitude") is None or target_lat is None:
             continue
         distance = _distance_km(float(target_lat), float(target_lon), float(row["latitude"]), float(row["longitude"]))

@@ -6,8 +6,11 @@ OAUTH_SCOPE_MISMATCH on every delete_row() call).
 
 Usage:
     1. Go to https://api-console.zoho.in and open the Self Client already
-       used for this project (same one ZOHO_CLIENT_ID/ZOHO_CLIENT_SECRET in
-       .env belong to).
+       used for this project (same one ZIA_OAUTH_CLIENT_ID/ZIA_OAUTH_CLIENT_SECRET
+       in .env belong to — env var NAMES renamed off the ZOHO_ prefix since
+       Catalyst AppSail's deploy rejects ZOHO_CLIENT_ID/ZOHO_CLIENT_SECRET/
+       ZOHO_REFRESH_TOKEN as reserved keywords; settings.ZOHO_CLIENT_ID etc.
+       in code is unchanged).
     2. Open its "Generate Code" tab. In the Scope field, enter exactly:
        ZohoCatalyst.zcql.CREATE,ZohoCatalyst.tables.rows.CREATE,ZohoCatalyst.tables.rows.READ,ZohoCatalyst.tables.rows.UPDATE,ZohoCatalyst.tables.rows.DELETE,QuickML.deployment.READ
        (all six together, comma-separated, no spaces). This is the FULL list —
@@ -23,7 +26,7 @@ Usage:
     3. Pick a time duration (10 minutes is plenty) and click CREATE. Copy the
        code shown — it's only valid for a few minutes and can only be used once.
     4. Run: python scripts/exchange_oauth_code.py PASTE_THE_CODE_HERE
-    5. Copy the refresh_token this prints into .env as ZOHO_REFRESH_TOKEN,
+    5. Copy the refresh_token this prints into .env as ZIA_OAUTH_REFRESH_TOKEN,
        then restart the backend.
 """
 import sys
@@ -47,10 +50,10 @@ def _write_refresh_token(new_token: str) -> None:
     with open(_ENV_PATH) as f:
         content = f.read()
     updated, count = re.subn(
-        r"^ZOHO_REFRESH_TOKEN=.*$", f"ZOHO_REFRESH_TOKEN={new_token}", content, flags=re.MULTILINE
+        r"^ZIA_OAUTH_REFRESH_TOKEN=.*$", f"ZIA_OAUTH_REFRESH_TOKEN={new_token}", content, flags=re.MULTILINE
     )
     if count == 0:
-        raise RuntimeError("Couldn't find a ZOHO_REFRESH_TOKEN= line in .env to replace")
+        raise RuntimeError("Couldn't find a ZIA_OAUTH_REFRESH_TOKEN= line in .env to replace")
     with open(_ENV_PATH, "w") as f:
         f.write(updated)
 
@@ -84,7 +87,7 @@ def main():
         sys.exit(1)
 
     _write_refresh_token(data["refresh_token"])
-    print("Success — .env's ZOHO_REFRESH_TOKEN has been updated with the new token.")
+    print("Success — .env's ZIA_OAUTH_REFRESH_TOKEN has been updated with the new token.")
     print("Restart the backend now for it to take effect.")
 
 

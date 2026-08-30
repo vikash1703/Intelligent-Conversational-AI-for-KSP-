@@ -3,9 +3,11 @@ import logging
 import re
 import time
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import StreamingResponse
 from schemas.chat_dto import (
     ChatRequest, ChatResponse, ChatSessionSummary, ChatMessageOut, ChatFeedbackRequest,
     ClearLanguagePreferenceRequest,
@@ -29,7 +31,8 @@ from services.audit_service import (
 )
 from services.legal_kb_service import answer_legal_query
 from services.scoring_service import get_early_warning_alerts
-from chat.router import classify_intent, rewrite_follow_up
+from services.permission_service import get_scoped_station_ids
+from chat.router import classify_intent, rewrite_and_classify_follow_up
 from chat.entity_extractor import get_dataset_date_span
 from chat.fast_path import fast_path_classification, EMPTY_ENTITIES
 from chat.zia_client import Budget
@@ -38,8 +41,12 @@ from chat.language import script_matches, LANGUAGE_NAMES
 from chat.zcql_builder import (
     count_cases, list_cases, group_by_district, group_by_month, group_by_section, average_days_to_arrest,
     validate_crime_type, validate_district, suggest_crime_types, suggest_districts,
+    validate_case_status, suggest_case_statuses,
 )
-from chat.llm_provider import complete_with_failover, translate_with_failover, rag_answer_with_failover
+from chat.llm_provider import (
+    complete_with_failover, translate_with_failover, rag_answer_with_failover, rag_answer_with_failover_stream,
+)
+from chat.status_messages import status_text
 from chat.prompts import (
     SYSTEM_PROMPT, OUT_OF_SCOPE_REPLY, LOW_CONFIDENCE_REPLY, NETWORK_QUERY_REDIRECT, is_vague_rag_answer,
     build_sources_line, strip_existing_sources_line,
@@ -162,9 +169,13 @@ _AGGREGATE_ANSWER_BILINGUAL_PROMPT = (
 )
 
 
-def _filters_line(crime_type: str | None, district: str | None, date_from: str | None, date_to: str | None) -> str:
+def _filters_line(
+    crime_type: str | None, district: str | None, date_from: str | None, date_to: str | None,
+    case_status: str | None = None,
+) -> str:
     return (
         f"Filters — crime type: {crime_type or 'any'}; district: {district or 'any'}; "
+        f"case status: {case_status or 'any'}; "
         f"date range: {date_from or 'unbounded'} to {date_to or 'unbounded'}."
     )
 
@@ -182,7 +193,9 @@ def _severity_tier(ratio: float) -> str:
     return "Declining"
 
 
-def _trend_context_line(crime_type: str | None, date_from: str | None, date_to: str | None) -> str | None:
+def _trend_context_line(
+    crime_type: str | None, date_from: str | None, date_to: str | None, station_ids: list[int] | None = None,
+) -> str | None:
     """When a question asks about one crime type over a ~30-day window ending
     at the dataset's latest known date (e.g. "why are X cases spiking in the
     last 30 days") this is the same recent-vs-historical-baseline comparison
@@ -205,7 +218,7 @@ def _trend_context_line(crime_type: str | None, date_from: str | None, date_to: 
     if not (25 <= span_days <= 35):
         return None
 
-    alerts = get_early_warning_alerts(recent_days=30)
+    alerts = get_early_warning_alerts(recent_days=30, station_ids=station_ids)
     match = next((a for a in alerts if a["crime_type"] == crime_type), None)
     if match is None or match["window_start"] > date_to or match["window_start"] < date_from:
         # window_start comparison is a loose sanity check that the alert's own
@@ -222,12 +235,13 @@ def _trend_context_line(crime_type: str | None, date_from: str | None, date_to: 
 
 
 def _describe_result(aggregation: str, crime_type: str | None, district: str | None,
-                      date_from: str | None, date_to: str | None, result: dict) -> str:
+                      date_from: str | None, date_to: str | None, result: dict,
+                      case_status: str | None = None) -> str:
     """Plain-text, deterministic rendering of the computed result — this is
     what the LLM in _compose_aggregate_answer is asked to phrase naturally.
     Keeping this deterministic (not itself LLM-generated) guarantees every
     number the model is allowed to talk about is real and exact."""
-    filters = _filters_line(crime_type, district, date_from, date_to)
+    filters = _filters_line(crime_type, district, date_from, date_to, case_status)
     if aggregation == "list":
         lines = [f"- {c['crime_no']} registered {c['registered_date']}: {c['brief_facts']}" for c in result["cases"]]
         return (
@@ -335,6 +349,7 @@ def _clarifying_response(message: str) -> dict:
 
 def _handle_aggregate_query(
     question: str, entities: dict, resolved_lang: str | None = None, budget: "Budget | None" = None,
+    station_ids: list[int] | None = None,
 ) -> dict | None:
     """Validates crime_type/district against the real whitelists, dispatches
     to the matching zcql_builder template, and composes a natural-language
@@ -402,12 +417,29 @@ def _handle_aggregate_query(
         )
         return _clarifying_response(message)
 
+    # case_status (added 2026-08-24 — REAL BUG FIXED: "how many cases are
+    # charge sheeted" used to silently answer with the unfiltered total
+    # instead of a real, status-filtered count, because this aggregation
+    # path had no concept of case status at all — see chat/zcql_builder.
+    # validate_case_status's docstring). Same validate-or-clarify pattern as
+    # crime_type/district above, not a silent ignore-or-guess.
+    case_status_raw = entities.get("case_status")
+    case_status = validate_case_status(case_status_raw) if case_status_raw else None
+    if case_status_raw and case_status is None:
+        options = suggest_case_statuses(case_status_raw)
+        message = (
+            f"I don't recognize \"{case_status_raw}\" as a case status in this dataset. "
+            f"Did you mean {', '.join(options[:-1])} or {options[-1]}?" if len(options) > 1
+            else f"I don't recognize \"{case_status_raw}\" as a case status in this dataset. Did you mean {options[0]}?"
+        )
+        return _clarifying_response(message)
+
     if district and district_2:
-        r1 = count_cases(crime_type, district, date_from, date_to)
-        r2 = count_cases(crime_type, district_2, date_from, date_to)
+        r1 = count_cases(crime_type, district, date_from, date_to, station_ids=station_ids, case_status=case_status)
+        r2 = count_cases(crime_type, district_2, date_from, date_to, station_ids=station_ids, case_status=case_status)
         earliest, latest = get_dataset_date_span()
         window = (date_from or earliest, date_to or latest)
-        filters = _filters_line(crime_type, None, date_from, date_to)
+        filters = _filters_line(crime_type, None, date_from, date_to, case_status)
         description = f"{filters}\n{district}: {r1['count']} cases\n{district_2}: {r2['count']} cases"
         answer, translated, provider_used, fallback_reason, provider_latency_ms = _compose_aggregate_answer(
             question, description, resolved_lang=resolved_lang, budget=budget,
@@ -431,22 +463,22 @@ def _handle_aggregate_query(
 
     aggregation = entities["aggregation"]
     if aggregation == "count":
-        result = count_cases(crime_type, district, date_from, date_to)
+        result = count_cases(crime_type, district, date_from, date_to, station_ids=station_ids, case_status=case_status)
         count = result["count"]
     elif aggregation == "list":
-        result = list_cases(crime_type, district, date_from, date_to)
+        result = list_cases(crime_type, district, date_from, date_to, station_ids=station_ids, case_status=case_status)
         count = result["count"]
     elif aggregation == "group_by_district":
-        result = group_by_district(crime_type, date_from, date_to)
+        result = group_by_district(crime_type, date_from, date_to, station_ids=station_ids, case_status=case_status)
         count = result["total"]
     elif aggregation == "group_by_section":
-        result = group_by_section(crime_type, date_from, date_to)
+        result = group_by_section(crime_type, date_from, date_to, station_ids=station_ids, case_status=case_status)
         count = result["total_cases"]
     elif aggregation == "avg_days_to_arrest":
-        result = average_days_to_arrest(crime_type, district, date_from, date_to)
+        result = average_days_to_arrest(crime_type, district, date_from, date_to, station_ids=station_ids, case_status=case_status)
         count = result["total_cases"]
     else:  # group_by_month or trend
-        result = group_by_month(crime_type, district, date_from, date_to)
+        result = group_by_month(crime_type, district, date_from, date_to, station_ids=station_ids, case_status=case_status)
         count = result["total"]
 
     earliest, latest = get_dataset_date_span()
@@ -473,6 +505,7 @@ def _handle_aggregate_query(
         answer = (
             f"No {crime_type or 'matching'} cases found"
             f"{f' in {district}' if district else ''}"
+            f"{f' with status {case_status}' if case_status else ''}"
             f"{f' between {date_from} and {date_to}' if date_from or date_to else ''}. "
             f"Available crime types: {', '.join(suggest_crime_types())}. "
             f"Recorded cases span {earliest} to {latest}."
@@ -493,7 +526,7 @@ def _handle_aggregate_query(
     # never blocks the main answer.
     if district is None and aggregation in ("count", "group_by_month", "trend"):
         try:
-            breakdown = group_by_district(crime_type, date_from, date_to)
+            breakdown = group_by_district(crime_type, date_from, date_to, station_ids=station_ids, case_status=case_status)
             top_districts = breakdown["by_district"][:5]
             if top_districts:
                 result["district_breakdown"] = (
@@ -503,10 +536,10 @@ def _handle_aggregate_query(
         except Exception as e:
             logger.warning(f"District-breakdown enrichment skipped: {e}")
 
-    description = _describe_result(aggregation, crime_type, district, date_from, date_to, result)
+    description = _describe_result(aggregation, crime_type, district, date_from, date_to, result, case_status)
     if result.get("district_breakdown"):
         description = f"{description}\n{result['district_breakdown']}"
-    trend_line = _trend_context_line(crime_type, date_from, date_to)
+    trend_line = _trend_context_line(crime_type, date_from, date_to, station_ids)
     if trend_line:
         description = f"{description}\n\n{trend_line}"
     answer, translated, provider_used, fallback_reason, provider_latency_ms = _compose_aggregate_answer(
@@ -520,7 +553,7 @@ def _handle_aggregate_query(
 
     citations = [{
         "source": "database", "aggregation": aggregation, "crime_type": crime_type,
-        "district": district, "count": count, "window": window,
+        "district": district, "case_status": case_status, "count": count, "window": window,
     }]
     answer = strip_existing_sources_line(answer)
     sources_line = build_sources_line(citations)
@@ -603,52 +636,36 @@ def _format_raw_case_data(crime_no: str, db_data: dict, mo_result: dict | None) 
     return "\n".join(lines)
 
 
-def _grounded_answer(
+def _build_grounded_query(
     question: str, explicit_crime_no: str | None, history_str: str, allow_case_context: bool,
-    budget: "Budget | None" = None,
-) -> tuple[str, list, bool | None, str | None, str | None, bool, float | None]:
-    """The pre-routing behavior, unchanged: crime-number regex + full-record
-    injection + MO-pattern enrichment + history-aware RAG call. This is what
-    CASE_LOOKUP, the AGGREGATE_QUERY stub, an unresolved FOLLOW_UP, and a
-    failed/low-confidence classification all fall back to — all four are,
-    structurally, "answer the way this endpoint always did before routing was
-    added", so they share one implementation rather than four copies that could
-    drift apart.
+    station_ids: list[int] | None = None,
+) -> dict:
+    """Pure grounding/prompt-building — crime-number regex + full-record
+    injection + MO-pattern enrichment + history-aware prompt assembly. No LLM
+    call happens in here at all; extracted out of what used to be the first
+    two-thirds of _grounded_answer() (below) specifically so /chat/stream's
+    streaming path can reuse the exact same grounding logic instead of a
+    second, drift-prone copy of it — this stays the single source of truth
+    for "what does the composer get told" for both the streaming and
+    non-streaming endpoints.
 
     `allow_case_context=False` is LEGAL_REFERENCE's one behavioral difference —
-    never look for or inject a crime number's case data even if one is present,
-    matching "RAG restricted to the legal reference corpus only, do NOT inject
-    case data".
+    never look for or inject a crime number's case data even if one is present.
 
-    Returns (answer, citations, case_found, provider_used, fallback_reason,
-    raw_fallback). case_found is None when this was a short-circuited "no
-    such case" answer (caller should return immediately, no second call
-    needed; provider_used/fallback_reason are also None there, since no LLM
-    call happened), else a bool.
-
-    provider_used/fallback_reason come from chat/llm_provider.
-    rag_answer_with_failover's "composition" chain (Gemini -> Zia — Groq is
-    structurally excluded from composition, see that module's docstring).
-    Gemini is primary and answers directly from `final_query` (which already
-    includes whatever local context — case DB data, MO analysis,
-    conversation history — was built into it below); Zia (Catalyst's own
-    hosted RAG/document retrieval) is the fallback when Gemini fails or is
-    rate-limited. Either way DB-grounded answers stay equally grounded
-    (requirement: grounding must not weaken on failover) — the one honest
-    gap is Zia's own uploaded-document KB retrieval, which only Zia itself
-    can reach; when Gemini answers (the common case now), that case's
-    citations list is empty rather than fabricated.
-
-    raw_fallback=True (provider_used="raw_data") is the requirement-6c
-    graceful-total-failure path: when EVERY composition provider fails AND a
-    case was actually loaded (case_found), the raw structured case record is
-    returned instead of an apology — never a 500, never silence about what
-    happened."""
+    Returns a dict:
+      - early_answer: set (non-None) only for the short-circuited "no such
+        case" reply — caller should use this directly and never call a
+        composer at all.
+      - final_query, case_found, db_data, mo_result, effective_crime_no: set
+        for the normal path — final_query is what a composer should be
+        called with.
+    """
     context_str = ""
     case_found = False
     db_data = None
     mo_result = None
     effective_crime_no = explicit_crime_no if allow_case_context else None
+    _t0 = time.monotonic()  # perf-diagnostic only, see _stream_chat_response's perf() docstring
 
     if allow_case_context:
         if not effective_crime_no:
@@ -657,12 +674,36 @@ def _grounded_answer(
                 effective_crime_no = match.group(0)
 
         if effective_crime_no:
-            try:
-                db_data = get_case_details(effective_crime_no)
-            except ValueError:
-                # Same "Invalid crime number format" the regex in db_service raises —
-                # cases.py already turns this into a 400.
-                raise AppException("Invalid crime number format", status_code=400)
+            # get_case_details and analyze_mo both only depend on
+            # effective_crime_no (verified: analyze_mo re-fetches the target
+            # case's own CaseMaster row itself, independently — it never
+            # reads get_case_details' result) — live-measured taking
+            # ~1054ms + ~912ms sequentially, the two single biggest
+            # pre-composition stages. Same ThreadPoolExecutor pattern
+            # already used for db_service.get_case_full()'s 6 child-table
+            # fetches. analyze_mo() degrades gracefully to None for a
+            # crime_no with no matching case (its own early `if not
+            # target_rows: return None`), so running it before case_found is
+            # even known is safe — the "no such case" branch below just
+            # discards the (cheap, single-query) result unused.
+            def _safe_analyze_mo():
+                try:
+                    return analyze_mo(effective_crime_no)
+                except Exception as e:
+                    logger.warning(f"MO-analysis enrichment skipped for {effective_crime_no}: {e}")
+                    return None
+
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                case_future = pool.submit(get_case_details, effective_crime_no, station_ids)
+                mo_future = pool.submit(_safe_analyze_mo)
+                try:
+                    db_data = case_future.result()
+                except ValueError:
+                    # Same "Invalid crime number format" the regex in db_service raises —
+                    # cases.py already turns this into a 400.
+                    raise AppException("Invalid crime number format", status_code=400)
+                mo_result = mo_future.result()
+            logger.info(f"[perf] get_case_details+analyze_mo (parallel): {round((time.monotonic() - _t0) * 1000)}ms")
             case_found = db_data is not None
 
             if case_found and db_data.get("CaseStatusID"):
@@ -705,7 +746,8 @@ def _grounded_answer(
                     f"I couldn't find any case or accused record for crime number "
                     f"'{effective_crime_no}'. Please double-check the number and try again."
                 )
-                return answer, [], None, None, None, False, None
+                return {"early_answer": answer, "case_found": None, "db_data": None,
+                         "mo_result": None, "effective_crime_no": effective_crime_no}
 
             # Live-verified: without an explicit null-handling instruction, the model
             # sometimes fills in a plausible-sounding default (e.g. answered "case
@@ -734,13 +776,10 @@ def _grounded_answer(
                 "reporting the raw id:\n"
                 f"{str(db_data)}\n\n"
             )
-            # Surfaces the same crime-pattern/spree detection built for the Insights
-            # page's "Modus Operandi" card directly in chat.
-            try:
-                mo_result = analyze_mo(effective_crime_no)
-            except Exception as e:
-                logger.warning(f"MO-analysis enrichment skipped for {effective_crime_no}: {e}")
-                mo_result = None
+            # mo_result was already fetched above, concurrently with
+            # get_case_details — surfaces the same crime-pattern/spree
+            # detection built for the Insights page's "Modus Operandi" card
+            # directly in chat.
             if mo_result:
                 context_str += (
                     "Crime-pattern analysis for this case (based on matching crime type, "
@@ -797,6 +836,49 @@ def _grounded_answer(
         )
     else:
         final_query = question
+
+    return {
+        "early_answer": None, "final_query": final_query, "case_found": case_found,
+        "db_data": db_data, "mo_result": mo_result, "effective_crime_no": effective_crime_no,
+    }
+
+
+def _grounded_answer(
+    question: str, explicit_crime_no: str | None, history_str: str, allow_case_context: bool,
+    budget: "Budget | None" = None, station_ids: list[int] | None = None,
+) -> tuple[str, list, bool | None, str | None, str | None, bool, float | None]:
+    """The pre-routing behavior, unchanged: crime-number regex + full-record
+    injection + MO-pattern enrichment + history-aware RAG call. This is what
+    CASE_LOOKUP, the AGGREGATE_QUERY stub, an unresolved FOLLOW_UP, and a
+    failed/low-confidence classification all fall back to — all four are,
+    structurally, "answer the way this endpoint always did before routing was
+    added", so they share one implementation rather than four copies that could
+    drift apart. Non-streaming caller (POST /chat/message) — see
+    /chat/stream's own handler for the streaming equivalent, which calls
+    _build_grounded_query() directly instead of this wrapper.
+
+    Returns (answer, citations, case_found, provider_used, fallback_reason,
+    raw_fallback, provider_latency_ms). case_found is None when this was a
+    short-circuited "no such case" answer (caller should return immediately,
+    no second call needed; provider_used/fallback_reason are also None
+    there, since no LLM call happened), else a bool.
+
+    provider_used/fallback_reason come from chat/llm_provider.
+    rag_answer_with_failover's "composition" chain (Gemini -> Zia — Groq is
+    structurally excluded from composition, see that module's docstring).
+
+    raw_fallback=True (provider_used="raw_data") is the requirement-6c
+    graceful-total-failure path: when EVERY composition provider fails AND a
+    case was actually loaded (case_found), the raw structured case record is
+    returned instead of an apology — never a 500, never silence about what
+    happened."""
+    built = _build_grounded_query(question, explicit_crime_no, history_str, allow_case_context, station_ids)
+    if built["early_answer"] is not None:
+        return built["early_answer"], [], None, None, None, False, None
+
+    final_query = built["final_query"]
+    case_found, db_data, mo_result = built["case_found"], built["db_data"], built["mo_result"]
+    effective_crime_no = built["effective_crime_no"]
 
     # Composition-chain failover (Gemini -> Zia, Groq structurally excluded —
     # see chat/llm_provider.rag_answer_with_failover's docstring). Whichever
@@ -1096,7 +1178,15 @@ def send_message(
         # and returns in milliseconds regardless of Zia's current health.
         cached = get_cached_answer(request.question)
         if cached is not None:
-            resolved_lang = get_session_language_preference(session_id)
+            sticky_lang = get_session_language_preference(session_id)
+            # Real bug fix (2026-08-29): resolved_lang used to come from
+            # sticky preference alone, and input_language was never returned
+            # at all on a cache hit — a repeated Hindi/Kannada question
+            # silently lost its detected language the second time it was
+            # asked. cached["input_language"] (added alongside this fix)
+            # restores the exact same resolution _auto_detected_lang already
+            # uses on the non-cached path below.
+            resolved_lang = sticky_lang or _auto_detected_lang(cached["input_language"])
             answer = cached["answer"]
             save_message(session_id, "user", request.question)
             save_message(session_id, "assistant", answer)
@@ -1113,7 +1203,7 @@ def send_message(
             return ChatResponse(
                 answer=answer, session_id=session_id, citations=cached["citations"], intent=cached["intent"],
                 latency_ms=elapsed_ms(), response_language=resolved_lang, translated_answer=translated,
-                language_notice=notice, provider_used="cache",
+                language_notice=notice, provider_used="cache", input_language=cached["input_language"],
             )
 
         if _NETWORK_QUERY_RE.search(request.question):
@@ -1137,60 +1227,77 @@ def send_message(
         # _build_history_str) a semantic-similarity search over anything older.
         # `recent` alone is what the intent classifier gets — cheap, no Chroma
         # lookup, matching classify_intent's (message, recent_history) contract.
-        recent = get_recent_messages(session_id, limit=6)
-
+        #
         # Three-level language resolution, priority order: (1) an explicit
         # override detected THIS turn by classify_intent below always wins and
         # becomes the new sticky preference; (2) absent that, a sticky
         # preference from an earlier turn in this same session still applies;
         # (3) absent both, resolved_lang stays None and the existing frontend
         # auto-detect/UI-toggle behavior is untouched — this endpoint simply
-        # isn't asserting a language for that case. Read once, up front, since
-        # an explicit override this turn overwrites it further down rather
-        # than needing a second read.
-        sticky_lang = get_session_language_preference(session_id)
+        # isn't asserting a language for that case.
+        #
+        # These two reads both take only session_id and don't touch each
+        # other's data (verified: get_recent_messages reads ChatHistory,
+        # get_session_language_preference reads AuditLog) — live-measured at
+        # 250ms/287ms sequentially, run concurrently instead.
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            recent_future = pool.submit(get_recent_messages, session_id, 6)
+            sticky_future = pool.submit(get_session_language_preference, session_id)
+            recent = recent_future.result()
+            sticky_lang = sticky_future.result()
 
         classification = _classify_and_log(request.question, recent, session_id, current_user, client_ip, budget=budget)
         intent = classification["intent"]
-        # cleaned_message has any detected language-instruction phrase already
-        # stripped (see chat/router.py) — used for every downstream retrieval
-        # call below instead of request.question, so e.g. "...Answer in
-        # Kannada" retrieves on the real question, not the instruction.
-        # request.question itself (unmodified) is still what's saved to
-        # ChatHistory/AuditLog — the permanent record shows exactly what the
-        # user actually typed.
-        question_for_rag = classification["cleaned_message"]
-        # Captured once, from the ORIGINAL message's own classification — a
-        # FOLLOW_UP's rewrite+reclassification below operates on already-
-        # cleaned text (nothing left to detect a second time), so this must
-        # not be overwritten by the reclassification's own (near-certainly
-        # null) response_language.
+        # resolved_message is cleaned_message with follow-up resolution ALSO
+        # folded into the same classification call (added 2026-08-22, see
+        # chat/router.py's _CLASSIFY_PROMPT "resolved_message" paragraph) —
+        # for an ordinary (non-follow-up) message it's identical to
+        # cleaned_message; for a follow-up, the classifier has already
+        # rewritten it into a standalone question AND classified/extracted
+        # entities from that standalone form, all in this one call. This is
+        # what collapses a follow-up from 2 classification-type LLM calls
+        # down to 1 — matching a fresh question's call count — for every
+        # case the model can resolve using just the recent-turns context it's
+        # already given (the common case, live-measured).
+        question_for_rag = classification["resolved_message"]
+        # Captured once, from the ORIGINAL message's own classification — the
+        # rare FOLLOW_UP safety-net branch below operates on already-resolved
+        # text (nothing left to detect a second time), so this must not be
+        # overwritten by that reclassification's own (near-certainly null)
+        # response_language.
         explicit_override = classification["response_language"]
-        # Same reasoning, same original-classification-only capture: the
-        # FOLLOW_UP rewrite below turns the question into a standalone
-        # ENGLISH-ish question for re-lookup (rewrite_follow_up works off
-        # already-English cleaned_message text) — reclassifying THAT would
-        # likely detect "English" regardless of what language the user
-        # actually typed the follow-up in, losing the real signal.
+        # Same reasoning, same original-classification-only capture.
         input_language = classification["input_language"]
 
         # entities_source is whichever classification call's entity fields
         # (crime_type/district/date_from/.../aggregation) actually apply to
         # the final resolved intent — the original classification, unless the
-        # FOLLOW_UP branch below re-classifies a rewritten question, in which
-        # case that reclassification's own entities are the relevant ones.
+        # rare FOLLOW_UP safety-net branch below re-classifies, in which case
+        # that reclassification's own entities are the relevant ones.
         entities_source = classification
 
-        # FOLLOW_UP: resolve the referent from recent turns + Chroma recall,
-        # rewrite as a standalone question, then re-classify EXACTLY once — the
-        # rewritten question's own classification (even if it's FOLLOW_UP again,
-        # or another failure) is final, no further rewrite/recursion.
+        # Rare safety-net path: the main classification call above couldn't
+        # resolve this into a standalone form even with recent-turn context
+        # (see _CLASSIFY_PROMPT's resolved_message paragraph — this should be
+        # uncommon, not the default outcome for a follow-up). Falls back to
+        # the dedicated rewrite+reclassify call, now armed with the FULL
+        # history (recent turns + Chroma semantic recall beyond that window),
+        # which the main classification call doesn't have access to — a
+        # second, better-informed attempt before giving up.
         follow_up_history_str = None
         if intent == "FOLLOW_UP":
+            follow_up_start = time.monotonic()
             follow_up_history_str = _build_history_str(session_id, question_for_rag, recent)
-            rewritten = rewrite_follow_up(question_for_rag, follow_up_history_str, budget=budget)
-            question_for_rag = rewritten
-            reclassification = _classify_and_log(rewritten, recent, session_id, current_user, client_ip, budget=budget)
+            reclassification = rewrite_and_classify_follow_up(question_for_rag, follow_up_history_str, budget=budget)
+            question_for_rag = reclassification["rewritten_question"]
+            # Same AuditLog contract _classify_and_log's LLM-path branch already
+            # writes — this call replaces what used to be a separate
+            # _classify_and_log invocation, so it needs the same log entry.
+            log_intent_classification(
+                user_id=current_user.username, role_name=current_user.role.value, session_id=session_id,
+                message=question_for_rag, intent=reclassification["intent"], confidence=reclassification["confidence"],
+                latency_ms=(time.monotonic() - follow_up_start) * 1000, ip_address=client_ip,
+            )
             intent = reclassification["intent"] if reclassification["intent"] != "FOLLOW_UP" else None
             entities_source = reclassification
 
@@ -1223,7 +1330,7 @@ def send_message(
             return ChatResponse(
                 answer=answer, session_id=session_id, citations=[], intent=intent, latency_ms=elapsed_ms(),
                 response_language=resolved_lang, translated_answer=translated, language_notice=notice,
-                provider_used=None,
+                provider_used=None, input_language=input_language,
             )
 
         if intent == "LEGAL_REFERENCE":
@@ -1252,13 +1359,24 @@ def send_message(
                 # process restart within the 7-day TTL, now skips
                 # classification entirely too (see the cache check at the top
                 # of this function).
-                set_cached_answer(request.question, answer, [citation], intent)
+                set_cached_answer(request.question, answer, [citation], intent, input_language=input_language)
                 translated, notice = _resolve_translated_answer(answer, resolved_lang, budget=budget)
                 return ChatResponse(
                     answer=answer, session_id=session_id, citations=[citation], intent=intent, latency_ms=elapsed_ms(),
                     response_language=resolved_lang, translated_answer=translated, language_notice=notice,
-                    provider_used=None,
+                    provider_used=None, input_language=input_language,
                 )
+
+        # Resolved once, lazily — only cache/LEGAL_REFERENCE(KB hit)/
+        # OUT_OF_SCOPE turns can skip this (none of them touch case data);
+        # everything reaching this point needs it for both AGGREGATE_QUERY
+        # and the grounded-answer path just below. Can raise AppException
+        # (403, fail-closed) for an officer whose jurisdiction isn't
+        # configured — deliberately NOT caught here, propagates the same way
+        # every other AppException in this function does (see the except
+        # block at the bottom), rather than being swallowed into a generic
+        # 500 or silently treated as unscoped.
+        station_ids = get_scoped_station_ids(current_user)
 
         if intent == "AGGREGATE_QUERY":
             # Real ZCQL COUNT/GROUP aggregation — whitelist validation +
@@ -1271,7 +1389,9 @@ def send_message(
             # unresolved intent uses — everything else (an unrecognized
             # crime_type/district, a zero-count result) is handled and
             # returned here directly.
-            aggregate_result = _handle_aggregate_query(question_for_rag, entities_source, resolved_lang=resolved_lang, budget=budget)
+            aggregate_result = _handle_aggregate_query(
+                question_for_rag, entities_source, resolved_lang=resolved_lang, budget=budget, station_ids=station_ids,
+            )
             if aggregate_result is not None:
                 answer = aggregate_result["answer"]
                 save_message(session_id, "user", request.question)
@@ -1298,6 +1418,7 @@ def send_message(
                     fallback_reason=aggregate_result.get("fallback_reason"),
                     raw_fallback=aggregate_result.get("raw_fallback") or None,
                     provider_latency_ms=aggregate_result.get("provider_latency_ms"),
+                    input_language=input_language,
                 )
             logger.info(f"AGGREGATE_QUERY had no usable aggregation extracted (confidence={classification['confidence']}) — falling back to the grounded RAG flow")
 
@@ -1312,7 +1433,7 @@ def send_message(
         try:
             answer, citations, case_found, provider_used, fallback_reason, raw_fallback, provider_latency_ms = _grounded_answer(
                 question_for_rag, request.crime_no if allow_case_context else None, history_str, allow_case_context,
-                budget=budget,
+                budget=budget, station_ids=station_ids,
             )
         except AppException:
             raise
@@ -1344,7 +1465,7 @@ def send_message(
             return ChatResponse(
                 answer=answer, session_id=session_id, citations=[], intent=intent, latency_ms=elapsed_ms(),
                 response_language=resolved_lang, translated_answer=None, language_notice=notice,
-                service_degraded=True, provider_used=None,
+                service_degraded=True, provider_used=None, input_language=input_language,
             )
 
         answer = strip_existing_sources_line(answer)
@@ -1366,7 +1487,7 @@ def send_message(
                 response_language=resolved_lang, translated_answer=translated, language_notice=notice,
                 provider_used=provider_used,
                 fallback_reason=fallback_reason, raw_fallback=raw_fallback or None,
-                provider_latency_ms=provider_latency_ms,
+                provider_latency_ms=provider_latency_ms, input_language=input_language,
             )
 
         save_message(session_id, "user", request.question)
@@ -1382,7 +1503,7 @@ def send_message(
             response_language=resolved_lang, translated_answer=translated, language_notice=notice,
             provider_used=provider_used,
             fallback_reason=fallback_reason, raw_fallback=raw_fallback or None,
-            provider_latency_ms=provider_latency_ms,
+            provider_latency_ms=provider_latency_ms, input_language=input_language,
         )
     except AppException:
         # Already has the right status/message (e.g. CatalystQueryError's 502 for a
@@ -1391,6 +1512,393 @@ def send_message(
         raise
     except Exception as e:
         raise AppException(f"Chat processing failed: {str(e)}", status_code=500)
+
+
+def _sse(event: dict) -> str:
+    return f"data: {json.dumps(event)}\n\n"
+
+
+def _stream_chat_response(request: ChatRequest, http_request: Request, current_user: CurrentUser):
+    """Generator yielding SSE frames for POST /chat/stream — see that route's
+    own docstring. Mirrors send_message()'s control flow (reusing the exact
+    same helpers: _classify_and_log, _build_history_str,
+    rewrite_and_classify_follow_up, _build_grounded_query,
+    answer_legal_query, _handle_aggregate_query) so the two endpoints can't
+    silently drift apart, rather than a second, independent implementation
+    of the routing logic.
+
+    Scope, deliberately: multi-question batching (_split_multi_question) is
+    NOT handled here — a pasted multi-question message streams as one turn
+    against the whole raw text. POST /chat/message remains the endpoint for
+    that case (checked first, so streaming callers with a genuine batch
+    still get a reasonable, if unsplit, answer rather than an error).
+
+    reasoning_path (carried in the final "done" event) is the explainability
+    trace: every stage this turn genuinely went through, in arrival order,
+    each annotated with what actually happened (a real row count, not a
+    filler string) — meant to be persisted client-side under the finished
+    message as a collapsible trace, not thrown away once the transient
+    loading state ends."""
+    turn_start = time.monotonic()
+    reasoning_path: list[dict] = []
+
+    def stage(name: str, detail: str) -> None:
+        reasoning_path.append({"stage": name, "detail": detail, "at_ms": round((time.monotonic() - turn_start) * 1000)})
+
+    # Perf-diagnostic logging (server log, not the user-facing reasoning_path
+    # trace above) — added while chasing the "~1.1s unaccounted for" gap
+    # between the classify+retrieve estimate and measured first-token time.
+    # Kept as permanent instrumentation (cheap — one monotonic() read and a
+    # log line per stage) rather than throwaway prints, since pre-composition
+    # latency is exactly the kind of regression that's invisible again the
+    # moment nobody's actively watching for it.
+    def perf(label: str) -> None:
+        logger.info(f"[perf] {label}: {round((time.monotonic() - turn_start) * 1000)}ms since request start")
+
+    def elapsed_ms() -> float:
+        return round((time.monotonic() - turn_start) * 1000, 1)
+
+    if not request.question or not request.question.strip():
+        yield _sse({"type": "error", "message": "Question cannot be empty"})
+        return
+
+    session_id = request.session_id or str(uuid.uuid4())
+    client_ip = http_request.client.host if http_request.client else "Unknown"
+    budget = Budget()
+
+    def done(**kwargs) -> str:
+        base = {
+            "type": "done", "session_id": session_id, "latency_ms": elapsed_ms(),
+            "reasoning_path": reasoning_path, "citations": [], "sources": None,
+            "provider_used": None, "fallback_reason": None, "raw_fallback": None,
+            "provider_latency_ms": None, "response_language": None,
+            "translated_answer": None, "language_notice": None, "intent": None,
+            # See ChatResponse.input_language's docstring — the backend
+            # classifier's own language detection, independent of script.
+            # None for the pre-classification short-circuits (cache hit,
+            # network-query redirect), where no classification ever ran.
+            "input_language": None,
+        }
+        base.update(kwargs)
+        return _sse(base)
+
+    try:
+        # Cache hit — already instant, no meaningful stages to show.
+        cached = get_cached_answer(request.question)
+        if cached is not None:
+            # Same real bug fix as the non-streaming cache-hit path above —
+            # see that comment for the full explanation.
+            sticky_lang = get_session_language_preference(session_id)
+            resolved_lang = sticky_lang or _auto_detected_lang(cached["input_language"])
+            answer = cached["answer"]
+            save_message(session_id, "user", request.question)
+            save_message(session_id, "assistant", answer)
+            log_chat_query(
+                user_id=current_user.username, role_name=current_user.role.value, session_id=session_id,
+                query_text=request.question, response_text=answer, ip_address=client_ip,
+            )
+            log_intent_classification(
+                user_id=current_user.username, role_name=current_user.role.value, session_id=session_id,
+                message=request.question, intent=cached["intent"], confidence=1.0,
+                latency_ms=elapsed_ms(), ip_address=client_ip,
+            )
+            translated, notice = _resolve_translated_answer(answer, resolved_lang, budget=budget)
+            yield _sse({"type": "token", "text": answer})
+            yield done(answer=answer, intent=cached["intent"], citations=cached["citations"],
+                       response_language=resolved_lang, translated_answer=translated,
+                       language_notice=notice, provider_used="cache", input_language=cached["input_language"])
+            return
+
+        if _NETWORK_QUERY_RE.search(request.question):
+            resolved_lang = get_session_language_preference(session_id)
+            answer = NETWORK_QUERY_REDIRECT
+            save_message(session_id, "user", request.question)
+            save_message(session_id, "assistant", answer)
+            log_chat_query(
+                user_id=current_user.username, role_name=current_user.role.value, session_id=session_id,
+                query_text=request.question, response_text=answer, ip_address=client_ip,
+            )
+            translated, notice = _resolve_translated_answer(answer, resolved_lang, budget=budget)
+            yield _sse({"type": "token", "text": answer})
+            yield done(answer=answer, intent="OUT_OF_SCOPE", response_language=resolved_lang,
+                       translated_answer=translated, language_notice=notice)
+            return
+
+        perf("request_received")
+        # Both take only session_id, don't touch each other's data — run
+        # concurrently (see send_message's matching comment for the
+        # independence verification).
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            recent_future = pool.submit(get_recent_messages, session_id, 6)
+            sticky_future = pool.submit(get_session_language_preference, session_id)
+            recent = recent_future.result()
+            sticky_lang = sticky_future.result()
+        perf("recent_and_sticky_lang_done")
+
+        yield _sse({"type": "status", "stage": "classifying", "text": status_text("classifying", sticky_lang)})
+        classification = _classify_and_log(request.question, recent, session_id, current_user, client_ip, budget=budget)
+        perf("classify_and_log_done")
+        stage("classify", f"intent={classification['intent']}, confidence={classification['confidence']}")
+        intent = classification["intent"]
+        # resolved_message folds follow-up resolution into this same call —
+        # see the matching comment in send_message() and chat/router.py's
+        # _CLASSIFY_PROMPT. Collapses a follow-up to 1 classification-type
+        # call (matching a fresh question) for every case the model can
+        # resolve from recent-turn context alone.
+        question_for_rag = classification["resolved_message"]
+        explicit_override = classification["response_language"]
+        input_language = classification["input_language"]
+        entities_source = classification
+
+        # Rare safety-net path — see send_message()'s matching comment.
+        follow_up_history_str = None
+        if intent == "FOLLOW_UP":
+            yield _sse({"type": "status", "stage": "classifying", "text": status_text("classifying", sticky_lang)})
+            follow_up_history_str = _build_history_str(session_id, question_for_rag, recent)
+            follow_up_start = time.monotonic()
+            reclassification = rewrite_and_classify_follow_up(question_for_rag, follow_up_history_str, budget=budget)
+            question_for_rag = reclassification["rewritten_question"]
+            log_intent_classification(
+                user_id=current_user.username, role_name=current_user.role.value, session_id=session_id,
+                message=question_for_rag, intent=reclassification["intent"], confidence=reclassification["confidence"],
+                latency_ms=(time.monotonic() - follow_up_start) * 1000, ip_address=client_ip,
+            )
+            perf("follow_up_resolve_and_log_done")
+            stage("resolve_follow_up", f"rewritten -> intent={reclassification['intent']}")
+            intent = reclassification["intent"] if reclassification["intent"] != "FOLLOW_UP" else None
+            entities_source = reclassification
+
+        if explicit_override:
+            resolved_lang = explicit_override
+            log_language_preference(
+                user_id=current_user.username, role_name=current_user.role.value,
+                session_id=session_id, language=explicit_override, ip_address=client_ip,
+            )
+        else:
+            resolved_lang = sticky_lang or _auto_detected_lang(input_language)
+
+        if intent == "OUT_OF_SCOPE":
+            answer = OUT_OF_SCOPE_REPLY
+            save_message(session_id, "user", request.question)
+            save_message(session_id, "assistant", answer)
+            log_chat_query(
+                user_id=current_user.username, role_name=current_user.role.value, session_id=session_id,
+                query_text=request.question, response_text=answer, ip_address=client_ip,
+            )
+            translated, notice = _resolve_translated_answer(answer, resolved_lang, budget=budget)
+            yield _sse({"type": "token", "text": answer})
+            yield done(answer=answer, intent=intent, response_language=resolved_lang,
+                       translated_answer=translated, language_notice=notice, input_language=input_language)
+            return
+
+        if intent == "LEGAL_REFERENCE":
+            kb_result = answer_legal_query(question_for_rag)
+            if kb_result:
+                answer = kb_result["answer"]
+                citation = {"source": "legal_kb"}
+                citation.update({k: v for k, v in kb_result.items() if k != "answer"})
+                if sources_line := build_sources_line([citation]):
+                    answer = f"{answer}\n\n{sources_line}"
+                save_message(session_id, "user", request.question)
+                save_message(session_id, "assistant", answer)
+                log_chat_query(
+                    user_id=current_user.username, role_name=current_user.role.value, session_id=session_id,
+                    query_text=request.question, response_text=answer, ip_address=client_ip,
+                )
+                set_cached_answer(request.question, answer, [citation], intent, input_language=input_language)
+                translated, notice = _resolve_translated_answer(answer, resolved_lang, budget=budget)
+                stage("legal_kb", "answered from deterministic legal knowledge base, no LLM call")
+                yield _sse({"type": "token", "text": answer})
+                yield done(answer=answer, intent=intent, citations=[citation],
+                           response_language=resolved_lang, translated_answer=translated, language_notice=notice,
+                           input_language=input_language)
+                return
+
+        # See send_message()'s matching comment — resolved once, lazily, only
+        # for the paths that actually touch case data. A fail-closed
+        # AppException here is caught by this generator's own outer
+        # try/except AppException below and surfaces as an SSE error event
+        # (the streaming equivalent of a 403 — can't set an HTTP status
+        # mid-stream).
+        station_ids = get_scoped_station_ids(current_user)
+
+        if intent == "AGGREGATE_QUERY":
+            yield _sse({"type": "status", "stage": "searching", "text": status_text("searching", resolved_lang)})
+            yield _sse({"type": "status", "stage": "composing", "text": status_text("composing", resolved_lang),
+                        "response_language": resolved_lang, "input_language": input_language})
+            aggregate_result = _handle_aggregate_query(
+                question_for_rag, entities_source, resolved_lang=resolved_lang, budget=budget, station_ids=station_ids,
+            )
+            if aggregate_result is not None:
+                answer = aggregate_result["answer"]
+                stage("aggregate_query", f"aggregation={entities_source.get('aggregation')}")
+                save_message(session_id, "user", request.question)
+                save_message(session_id, "assistant", answer)
+                log_chat_query(
+                    user_id=current_user.username, role_name=current_user.role.value, session_id=session_id,
+                    query_text=request.question, response_text=answer, ip_address=client_ip,
+                )
+                if aggregate_result["translated_answer"] is not None:
+                    translated, notice = aggregate_result["translated_answer"], aggregate_result["language_notice"]
+                else:
+                    translated, notice = _resolve_translated_answer(answer, resolved_lang, budget=budget)
+                yield _sse({"type": "token", "text": answer})
+                yield done(
+                    answer=answer, intent=intent, citations=aggregate_result["citations"], sources=aggregate_result["sources"],
+                    response_language=resolved_lang, translated_answer=translated, language_notice=notice,
+                    provider_used=aggregate_result["provider"], fallback_reason=aggregate_result.get("fallback_reason"),
+                    raw_fallback=aggregate_result.get("raw_fallback") or None,
+                    provider_latency_ms=aggregate_result.get("provider_latency_ms"),
+                    input_language=input_language,
+                )
+                return
+
+        # Everything else — CASE_LOOKUP, an unresolved LEGAL_REFERENCE (KB miss),
+        # an unresolved AGGREGATE_QUERY, an unresolved FOLLOW_UP, a failed
+        # classification — shares the real, streamed composition path below.
+        # This is exactly the slow path (6.9s fresh / 19.6s follow-up,
+        # pre-fix) the whole streaming feature exists for.
+        history_str = follow_up_history_str if follow_up_history_str is not None else _build_history_str(session_id, question_for_rag, recent)
+        perf("build_history_str_done")
+        allow_case_context = intent != "LEGAL_REFERENCE"
+        effective_crime_no = request.crime_no if allow_case_context else None
+
+        yield _sse({"type": "status", "stage": "searching", "text": status_text("searching", resolved_lang)})
+        built = _build_grounded_query(question_for_rag, effective_crime_no, history_str, allow_case_context, station_ids)
+        perf("build_grounded_query_done")
+        if allow_case_context:
+            found_count = 1 if built["case_found"] else 0
+            stage("search_case_records", f"case_found={built['case_found']}")
+            yield _sse({"type": "status", "stage": "found", "text": status_text("found", resolved_lang, found_count), "count": found_count})
+
+        if built["early_answer"] is not None:
+            # No such case — already a complete, deterministic answer, no
+            # composer call needed at all.
+            answer = built["early_answer"]
+            save_message(session_id, "user", request.question)
+            save_message(session_id, "assistant", answer)
+            log_chat_query(
+                user_id=current_user.username, role_name=current_user.role.value, session_id=session_id,
+                query_text=request.question, response_text=answer, ip_address=client_ip,
+            )
+            translated, notice = _resolve_translated_answer(answer, resolved_lang, budget=budget)
+            yield _sse({"type": "token", "text": answer})
+            yield done(answer=answer, intent=intent, response_language=resolved_lang,
+                       translated_answer=translated, language_notice=notice, input_language=input_language)
+            return
+
+        yield _sse({"type": "status", "stage": "composing", "text": status_text("composing", resolved_lang),
+                    "response_language": resolved_lang, "input_language": input_language})
+        full_answer_chunks: list[str] = []
+        citations: list = []
+        provider_used, fallback_reason, provider_latency_ms = None, None, None
+        composition_failed = False
+        first_token_seen = False
+        try:
+            for event in rag_answer_with_failover_stream(built["final_query"], budget=budget):
+                if event["type"] == "token":
+                    if not first_token_seen:
+                        first_token_seen = True
+                        perf("first_composition_token")
+                    full_answer_chunks.append(event["text"])
+                    yield _sse({"type": "token", "text": event["text"]})
+                else:  # "done"
+                    citations = event["citations"]
+                    provider_used = event["provider_used"]
+                    fallback_reason = event["fallback_reason"]
+                    provider_latency_ms = event["latency_ms"]
+        except Exception as e:
+            composition_failed = True
+            logger.warning(f"Streaming composition failed: {e}")
+
+        if composition_failed:
+            if built["case_found"] and built["db_data"]:
+                answer = _format_raw_case_data(built["effective_crime_no"], built["db_data"], built["mo_result"])
+                citations = [{"source": "database", "crime_no": built["effective_crime_no"]}]
+                provider_used, fallback_reason, provider_latency_ms = "raw_data", None, None
+                yield _sse({"type": "token", "text": answer})
+            else:
+                answer = (
+                    "I'm having trouble reaching the AI service right now — it's responding "
+                    "very slowly or not at all. Please try again in a moment, or rephrase your question."
+                )
+                save_message(session_id, "user", request.question)
+                save_message(session_id, "assistant", answer)
+                log_chat_query(
+                    user_id=current_user.username, role_name=current_user.role.value, session_id=session_id,
+                    query_text=request.question, response_text=answer, ip_address=client_ip,
+                )
+                notice = None
+                if resolved_lang and resolved_lang != "en":
+                    notice = f"Could not respond in {LANGUAGE_NAMES.get(resolved_lang, resolved_lang)} right now — the AI service is unavailable."
+                yield _sse({"type": "token", "text": answer})
+                yield done(answer=answer, intent=intent, response_language=resolved_lang,
+                           language_notice=notice, service_degraded=True, input_language=input_language)
+                return
+        else:
+            answer = _strip_markdown("".join(full_answer_chunks))
+            if built["case_found"]:
+                citations = [{"source": "database", "crime_no": built["effective_crime_no"]}] + list(citations)
+            if not citations and not built["case_found"] and is_vague_rag_answer(answer):
+                answer = LOW_CONFIDENCE_REPLY
+                citations = []
+
+        stage("compose", f"provider={provider_used}" + (f", fallback_reason={fallback_reason}" if fallback_reason else ""))
+        answer = strip_existing_sources_line(answer)
+        if sources_line := build_sources_line(citations):
+            answer = f"{answer}\n\n{sources_line}"
+
+        save_message(session_id, "user", request.question)
+        save_message(session_id, "assistant", answer)
+        log_chat_query(
+            user_id=current_user.username, role_name=current_user.role.value, session_id=session_id,
+            query_text=request.question, response_text=answer, ip_address=client_ip,
+        )
+
+        translated, notice = None, None
+        if resolved_lang and resolved_lang != "en":
+            yield _sse({"type": "status", "stage": "translating", "text": status_text("translating", resolved_lang)})
+            translated, notice = _resolve_translated_answer(answer, resolved_lang, budget=budget)
+            stage("translate", f"target={resolved_lang}, ok={translated is not None}")
+
+        yield done(
+            answer=answer, intent=intent, citations=citations, response_language=resolved_lang,
+            translated_answer=translated, language_notice=notice, provider_used=provider_used,
+            fallback_reason=fallback_reason, raw_fallback=(provider_used == "raw_data") or None,
+            provider_latency_ms=provider_latency_ms, input_language=input_language,
+        )
+    except AppException as e:
+        yield _sse({"type": "error", "message": e.message, "status_code": e.status_code})
+    except Exception as e:
+        logger.error(f"Streaming chat processing failed: {e}")
+        yield _sse({"type": "error", "message": f"Chat processing failed: {str(e)}"})
+
+
+@router.post("/stream")
+def stream_message(request: ChatRequest, http_request: Request, current_user: CurrentUser = Depends(get_current_user)):
+    """SSE variant of POST /chat/message — same routing/grounding/composition
+    logic (see _stream_chat_response), streamed as it's produced instead of
+    buffered into one JSON response. POST /chat/message is unchanged and
+    stays available for any caller that wants a single response instead.
+
+    Event shapes (each an SSE `data: <json>\\n\\n` frame):
+      {"type": "status", "stage": ..., "text": "<localized progress text>"}
+      {"type": "token", "text": "<chunk of the answer>"}
+      {"type": "done", "answer": ..., "session_id": ..., "citations": [...],
+       "provider_used": ..., "fallback_reason": ..., "latency_ms": ...,
+       "response_language": ..., "translated_answer": ..., "language_notice": ...,
+       "intent": ..., "reasoning_path": [{"stage", "detail", "at_ms"}, ...]}
+      {"type": "error", "message": "..."}
+
+    `X-Accel-Buffering: no` disables nginx-style proxy buffering of the SSE
+    stream — harmless if nothing in front of this actually buffers, but the
+    one header that turns "streamed on the wire" into "the browser also gets
+    it incrementally" if something does."""
+    return StreamingResponse(
+        _stream_chat_response(request, http_request, current_user),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @router.post("/feedback")

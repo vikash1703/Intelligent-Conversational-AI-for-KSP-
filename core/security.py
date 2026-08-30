@@ -34,7 +34,12 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
 
 
-def create_access_token(username: str, role: UserRole, employee_id: int | None = None, home_district: str | None = None) -> str:
+def create_access_token(
+    username: str, role: UserRole, employee_id: int | None = None,
+    home_district: str | None = None, home_station_id: str | None = None,
+    home_station_name: str | None = None, access_level: str | None = None,
+    scope_label: str | None = None,
+) -> str:
     expire = datetime.now(timezone.utc) + timedelta(minutes=settings.JWT_EXPIRE_MINUTES)
     payload = {
         "sub": username,
@@ -45,6 +50,15 @@ def create_access_token(username: str, role: UserRole, employee_id: int | None =
         # token itself, same as role/employee_id, so scoping a request never
         # needs its own extra DB round-trip.
         "home_district": home_district,
+        # Added 2026-08-23, same reasoning — see CurrentUser.home_station_id
+        # / home_station_name / access_level.
+        "home_station_id": home_station_id,
+        "home_station_name": home_station_name,
+        "access_level": access_level,
+        # See CurrentUser.scope_label — English-only precomposed fallback,
+        # not what the UI header actually renders (it composes a localized
+        # label from the raw fields above instead).
+        "scope_label": scope_label,
         "exp": expire,
     }
     return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
@@ -65,12 +79,32 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(bearer_
             raise credentials_exception
         return CurrentUser(
             username=username, role=UserRole(role), employee_id=payload.get("employee_id"),
-            home_district=payload.get("home_district"),
+            home_district=payload.get("home_district"), home_station_id=payload.get("home_station_id"),
+            home_station_name=payload.get("home_station_name"), access_level=payload.get("access_level"),
+            scope_label=payload.get("scope_label"),
         )
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired", headers={"WWW-Authenticate": "Bearer"})
     except (jwt.InvalidTokenError, ValueError):
         raise credentials_exception
+
+
+def require_role(*allowed_roles: str):
+    """Dependency factory: restrict a route to an explicit set of role
+    values — e.g. Depends(require_role("Inspector", "SP")). Unlike
+    require_permission (a RolePermission-table flag, for feature gates that
+    should be admin-configurable per rank), this is for a feature whose
+    role list is a fixed product decision, not something meant to vary by
+    live RolePermission data — the Chargesheet Draft feature is explicitly
+    "Inspector and SP only", not Admin/DGP/IGP, unlike can_register_fir."""
+    def role_checker(current_user: CurrentUser = Depends(get_current_user)) -> CurrentUser:
+        if current_user.role.value not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Role '{current_user.role.value}' is not permitted to perform this action",
+            )
+        return current_user
+    return role_checker
 
 
 def require_permission(flag: str):

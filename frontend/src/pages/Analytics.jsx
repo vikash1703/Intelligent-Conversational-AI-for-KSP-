@@ -8,6 +8,7 @@ import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { api, ApiError } from "../api/client";
 import { genderLabel } from "../utils/lookups";
+import CaseOutcomeSankey from "../components/CaseOutcomeSankey";
 import "./Analytics.css";
 
 // CSS custom properties (not hardcoded hex) so every series stays legible in
@@ -95,10 +96,16 @@ export default function Analytics() {
       ["forecast", "/analytics/forecast?months_ahead=6"],
       ["earlyWarnings", "/scoring/early-warnings"],
       ["financial", "/financial/summary"],
+      ["caseOutcome", "/analytics/case-outcome-flow"],
     ];
+    // REAL BUG FIXED 2026-08-24 (codebase-wide timeout audit): none of these
+    // 8 calls had a timeoutMs — each card is independently keyed by `set`,
+    // so a single stalled endpoint previously left just that one card on
+    // "Loading…" forever with no error, never the whole page, but still a
+    // real permanent-spinner bug per card.
     jobs.forEach(([key, path]) => {
       set(key, { loading: true });
-      api.get(path, token)
+      api.get(path, token, { timeoutMs: 15000 })
         .then((data) => set(key, { loading: false, data }))
         .catch((err) => {
           if (err instanceof ApiError && err.status === 401) {
@@ -119,6 +126,11 @@ export default function Analytics() {
   const forecast = state.forecast?.data;
   const earlyWarnings = state.earlyWarnings?.data ?? [];
   const financial = state.financial?.data;
+  const caseOutcome = state.caseOutcome?.data;
+
+  function handleOutcomeSegmentClick(filter) {
+    navigate("/cases", { state: filter });
+  }
 
   const forecastSeries = forecast
     ? [...trends.slice(-6).map((t) => ({ month: t.month, actual: t.count })), ...forecast.forecast.map((f) => ({ month: f.month, projected: f.projected_count }))]
@@ -148,6 +160,20 @@ export default function Analytics() {
           <b className={suspiciousTxns ? "warn" : ""}>{suspiciousTxns !== null ? suspiciousTxns.toLocaleString() : "—"}</b>
         </div>
       </div>
+      <div className="an-card an-outcome-card">
+        <h3>{t("analytics.caseOutcomeTitle")}</h3>
+        {state.caseOutcome?.loading && <p className="an-note">{t("analytics.loading")}</p>}
+        {state.caseOutcome?.error && <p className="an-error">{state.caseOutcome.error}</p>}
+        {caseOutcome && (
+          <>
+            <p className="an-outcome-note">⚠ {t("analytics.caseOutcomeEvenNote")}</p>
+            <p className="an-outcome-note">⚠ {t("analytics.caseOutcomeUndetectedNote")}</p>
+            <CaseOutcomeSankey data={caseOutcome} onSegmentClick={handleOutcomeSegmentClick} t={t} />
+            <p className="an-hint">{t("analytics.caseOutcomeHint")}</p>
+          </>
+        )}
+      </div>
+
       <div className="an-grid">
         <ChartCard title={t("analytics.crimeTypeDistribution")} loading={state.crimeTypes?.loading} error={state.crimeTypes?.error} empty={crimeTypes.length === 0} t={t}>
           <ResponsiveContainer width="100%" height={220}>
@@ -294,6 +320,13 @@ export default function Analytics() {
               <Line type="monotone" dataKey="projected" stroke="var(--gold)" strokeWidth={2} strokeDasharray="5 4" dot name="Projected" />
             </LineChart>
           </ResponsiveContainer>
+          {forecast && (
+            <p className="an-hint">
+              {t("analytics.forecastMethodLabel")}: {forecast.method}. {t("analytics.forecastSlopeLabel")}:{" "}
+              {forecast.trend_slope_per_month >= 0 ? "+" : ""}{forecast.trend_slope_per_month} {t("analytics.forecastSlopeUnit")}
+              {Math.abs(forecast.trend_slope_per_month) < 0.1 && ` (${t("analytics.forecastFlatNote")})`}
+            </p>
+          )}
         </ChartCard>
 
         <ChartCard title={t("analytics.earlyWarnings")} loading={state.earlyWarnings?.loading} error={state.earlyWarnings?.error} empty={earlyWarnings.length === 0} t={t}>

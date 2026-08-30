@@ -6,10 +6,40 @@ from collections import Counter
 from core.catalyst_client import execute_zcql, zcql_escape
 from services.analytics_service import extract_crime_type
 from services.timeline_service import get_case_status_labels
+from services.custody_service import simulated_next_hearing_date
 
 logger = logging.getLogger("NetworkService")
 
 _ACCUSED_ID_PATTERN = re.compile(r"^\d+$")
+
+
+def _get_arrests_for_accused_rowid(accused_rowid) -> list[dict]:
+    """Real ArrestSurrender rows for this accused — Tier 1 item 9, added
+    2026-08-24. ArrestSurrender.AccusedMasterID stores a real Accused.ROWID
+    (see get_accused_profile's own docstring), so this is a direct equality
+    lookup, not the small/large id-space branching that function's own
+    accused_id resolution needs."""
+    if not accused_rowid:
+        return []
+    rows = execute_zcql(
+        "SELECT ArrestSurrender.ArrestSurrenderID, ArrestSurrender.ArrestSurrenderDate, "
+        "ArrestSurrender.release_date, ArrestSurrender.bail_status, "
+        "ArrestSurrender.bail_amount, ArrestSurrender.custody_type "
+        f"FROM ArrestSurrender WHERE ArrestSurrender.AccusedMasterID = '{zcql_escape(str(accused_rowid))}'"
+    )
+    arrests = []
+    for r in rows:
+        row = r.get("ArrestSurrender", r)
+        arrests.append({
+            "arrest_surrender_id": row.get("ArrestSurrenderID"),
+            "arrest_date": row.get("ArrestSurrenderDate"),
+            "release_date": row.get("release_date"),
+            "bail_status": row.get("bail_status"),
+            "bail_amount": row.get("bail_amount"),
+            "custody_type": row.get("custody_type"),
+            "next_hearing_date": simulated_next_hearing_date(row.get("ArrestSurrenderID"), row.get("bail_status")),
+        })
+    return arrests
 
 
 def get_network_for_accused(accused_id: str) -> dict | None:
@@ -64,23 +94,25 @@ def get_accused_profile(accused_id: str) -> dict:
     above) — and, for whichever of those has one, the linked case's crime
     type/date/location.
 
-    Deliberately does NOT attempt to report an arrest date or "days in custody" —
-    ArrestSurrender.AccusedMasterID is 100% NULL across all 1500 live rows (live-
-    verified) and the table has no release/duration column at all regardless, so
-    there is nothing real to compute that figure from.
+    Real arrest/custody data IS included now (Tier 1 item 9, added
+    2026-08-24) — see the "arrests" field below. STALE CLAIM CORRECTED
+    2026-08-24: this docstring used to claim ArrestSurrender.AccusedMasterID
+    is 100% NULL — live-reverified false (1500/1500 real rows populated,
+    every sampled value resolves to a real Accused.ROWID, same "id space"
+    quirk _MAX_PLAUSIBLE_ACCUSED_ID above documents).
     """
     if not _ACCUSED_ID_PATTERN.match(accused_id or ""):
         raise ValueError("Invalid accused_id format")
 
     if int(accused_id) > _MAX_PLAUSIBLE_ACCUSED_ID:
         rows = execute_zcql(
-            "SELECT Accused.AccusedMasterID, Accused.AccusedName, Accused.AgeYear, "
+            "SELECT Accused.ROWID, Accused.AccusedMasterID, Accused.AccusedName, Accused.AgeYear, "
             "Accused.GenderID, Accused.CaseMasterID "
             f"FROM Accused WHERE Accused.ROWID = '{zcql_escape(accused_id)}'"
         )
     else:
         rows = execute_zcql(
-            "SELECT Accused.AccusedMasterID, Accused.AccusedName, Accused.AgeYear, "
+            "SELECT Accused.ROWID, Accused.AccusedMasterID, Accused.AccusedName, Accused.AgeYear, "
             "Accused.GenderID, Accused.CaseMasterID "
             f"FROM Accused WHERE Accused.AccusedMasterID = {int(accused_id)}"
         )
@@ -95,6 +127,7 @@ def get_accused_profile(accused_id: str) -> dict:
         "age": accused.get("AgeYear"),
         "gender_id": accused.get("GenderID"),
         "case": None,
+        "arrests": _get_arrests_for_accused_rowid(accused.get("ROWID")),
     }
 
     case_master_id = accused.get("CaseMasterID")
@@ -272,10 +305,12 @@ def analyze_gang(gang_name: str) -> dict | None:
     }
 
 
-def get_organized_crime_groups() -> list:
+def get_organized_crime_groups(limit: int | None = None, offset: int = 0) -> list:
     """Ranks every known gang_name in CriminalNetwork by structural organization —
     surfaces which labeled groups actually behave like a cohesive organized-crime
-    structure versus a loosely associated set of names.
+    structure versus a loosely associated set of names. Already sorted strongest
+    (highest largest_component_share) first, so limit/offset naturally default to
+    the strongest groups rather than needing a separate top-N pass.
 
     Every seeded gang in this dataset currently falls in the same absolute
     "Fragmented" band (see analyze_gang's threshold comment), which makes that
@@ -283,7 +318,15 @@ def get_organized_crime_groups() -> list:
     (1 = most cohesive) use the exact same largest_component_share the label
     thresholds are computed from, so "Fragmented, but #1 of 5" is a real,
     consistent comparison rather than a second, differently-scored metric that
-    could disagree with the label."""
+    could disagree with the label.
+
+    Strips each gang's node_component map before returning — live-measured at
+    ~500+ entries per gang (one per member), the single largest contributor to
+    this endpoint's 140KB payload, and never actually consumed from here: the
+    frontend's gang list sidebar only reads the summary fields below; the
+    per-member map is re-fetched fresh, per-gang, from
+    GET /network/gang/{name}/analysis only once a specific gang is opened
+    (see Network.jsx's loadGang())."""
     rows = execute_zcql(
         "SELECT CriminalNetwork.gang_name, COUNT(CriminalNetwork.network_id) "
         "FROM CriminalNetwork GROUP BY CriminalNetwork.gang_name"
@@ -295,4 +338,7 @@ def get_organized_crime_groups() -> list:
     for i, a in enumerate(ranked):
         a["cohesion_rank"] = i + 1
         a["cohesion_total"] = total
+        a.pop("node_component", None)
+    if limit is not None:
+        ranked = ranked[offset:offset + limit]
     return ranked

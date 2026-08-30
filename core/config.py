@@ -13,12 +13,26 @@ class Settings:
 
     # Catalyst defaults to the Production/Live environment if this header is omitted —
     # our real 30-table schema lives in Development, so this must be sent on every call.
-    CATALYST_ENVIRONMENT: str = os.getenv("CATALYST_ENVIRONMENT", "Development")
+    # env var NAME renamed off "CATALYST_ENVIRONMENT" (2nd reserved-keyword
+    # 400 fix attempt, 2026-08-30 — the ONE var Catalyst is confirmed to
+    # reserve, X_ZOHO_CATALYST_LISTEN_PORT, shares this exact "CATALYST_"
+    # prefix, making this the next strongest suspect after the OAuth triad
+    # rename didn't clear the error alone). settings.CATALYST_ENVIRONMENT
+    # attribute name unchanged.
+    CATALYST_ENVIRONMENT: str = os.getenv("APP_CATALYST_ENV", "Development")
 
-    # Naye variables (jo missing hain)
-    ZOHO_CLIENT_ID: str = os.getenv("ZOHO_CLIENT_ID")
-    ZOHO_CLIENT_SECRET: str = os.getenv("ZOHO_CLIENT_SECRET")
-    ZOHO_REFRESH_TOKEN: str = os.getenv("ZOHO_REFRESH_TOKEN")
+    # Naye variables (jo missing hain) — env var NAMES renamed off the
+    # ZOHO_CLIENT_ID/ZOHO_CLIENT_SECRET/ZOHO_REFRESH_TOKEN Catalyst reserves
+    # (Catalyst AppSail deploy 400s with "environment_variables must not
+    # contain reserved keywords" — these three exact names collide with
+    # Zoho's own standard self-client OAuth env var convention, which
+    # Catalyst's platform blocks a customer from setting directly). The
+    # Python attribute names below are UNCHANGED (settings.ZOHO_CLIENT_ID
+    # etc. still works everywhere) — only the .env/app-config.json key each
+    # one reads from is renamed.
+    ZOHO_CLIENT_ID: str = os.getenv("ZIA_OAUTH_CLIENT_ID")
+    ZOHO_CLIENT_SECRET: str = os.getenv("ZIA_OAUTH_CLIENT_SECRET")
+    ZOHO_REFRESH_TOKEN: str = os.getenv("ZIA_OAUTH_REFRESH_TOKEN")
 
     # Auth / JWT
     JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY")
@@ -41,7 +55,11 @@ class Settings:
     # Zia-only (this is the expected state until a real key is supplied; see
     # .env.example).
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY")
-    GROQ_MODEL: str = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+    # llama-3.3-70b-versatile was decommissioned by Groq (live-verified 2026-08-22:
+    # every call 404'd "model_not_found" — see chat/llm_provider.py's module
+    # docstring). openai/gpt-oss-20b confirmed live against Groq's own
+    # /openai/v1/models listing and a real completions call before switching.
+    GROQ_MODEL: str = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
 
     # Second failover provider (chat/llm_provider.py) — Google AI Studio's free
     # tier for Gemini Flash. Unlike Groq, Gemini is trusted for user-facing

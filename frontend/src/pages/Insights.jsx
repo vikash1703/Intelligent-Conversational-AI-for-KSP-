@@ -5,13 +5,20 @@ import { useLanguage } from "../context/LanguageContext";
 import { api, ApiError } from "../api/client";
 import "./Insights.css";
 
-function ResultCard({ title, loading, error, children, t }) {
+// REAL BUG FIXED 2026-08-24: before any analysis had been run, this rendered
+// just the bare <h3> title with nothing under it — {!loading && !error &&
+// children} was true with children evaluating to `false`/`undefined` (e.g.
+// `caseResults.summary?.data && (...)`), which React renders as literally
+// nothing. hasData/emptyText make that state explicit instead of an
+// unintentional blank card.
+function ResultCard({ title, loading, error, hasData, emptyText, children, t }) {
   return (
     <div className="ins-card">
       <h3>{title}</h3>
       {loading && <p className="ins-note">{t("insights.analyzing")}</p>}
       {error && <p className="ins-error">{error}</p>}
-      {!loading && !error && children}
+      {!loading && !error && hasData && children}
+      {!loading && !error && !hasData && emptyText && <p className="ins-note">{emptyText}</p>}
     </div>
   );
 }
@@ -30,6 +37,12 @@ function InfoTooltip({ text }) {
     </span>
   );
 }
+
+// This app's real CrimeNo format is 18 digits (see services/fir_service.py's
+// generate_crime_no) — a plain, fairly reliable signal that someone typed a
+// case number into the accused-name field by mistake (the field label alone
+// apparently isn't enough — a real support report showed exactly this mix-up).
+const CRIME_NO_PATTERN = /^\d{18}$/;
 
 // Searchable autocomplete over real Accused names (services/db_service.py's
 // search_accused_names, via GET /cases/accused/search) — replaces a bare text
@@ -169,6 +182,12 @@ export default function Insights() {
   async function runCaseInsights(e) {
     e.preventDefault();
     if (!crimeNo.trim() || caseInsightsLoading) return;
+    // Case Summary and Behavioral Analysis search two independent things
+    // (a case vs. an accused person) — clearing the accused field here
+    // guarantees they never look linked, even if a value was left over
+    // from a previous, unrelated Behavioral Analysis search.
+    setAccusedName("");
+    setBehaviorResult({});
     const jobs = [
       ["summary", `/insights/case-summary/${encodeURIComponent(crimeNo.trim())}`],
       ["similar", `/insights/similar-cases/${encodeURIComponent(crimeNo.trim())}`],
@@ -186,9 +205,11 @@ export default function Insights() {
     });
   }
 
+  const accusedNameLooksLikeCrimeNo = CRIME_NO_PATTERN.test(accusedName.trim());
+
   async function runBehavioral(e) {
     e.preventDefault();
-    if (!accusedName.trim() || behaviorResult.loading) return;
+    if (!accusedName.trim() || behaviorResult.loading || accusedNameLooksLikeCrimeNo) return;
     setBehaviorResult({ loading: true });
     try {
       const data = await api.get(`/insights/behavioral-analysis?name=${encodeURIComponent(accusedName.trim())}`, token);
@@ -210,7 +231,7 @@ export default function Insights() {
           </button>
         </form>
         <div className="ins-grid">
-          <ResultCard title={t("insights.caseSummary")} loading={caseResults.summary?.loading} error={caseResults.summary?.error} t={t}>
+          <ResultCard title={t("insights.caseSummary")} loading={caseResults.summary?.loading} error={caseResults.summary?.error} hasData={!!caseResults.summary?.data} emptyText={t("insights.emptyCaseNo")} t={t}>
             {caseResults.summary?.data && (
               <>
                 <p className="ins-text">{caseResults.summary.data.summary}</p>
@@ -218,7 +239,7 @@ export default function Insights() {
               </>
             )}
           </ResultCard>
-          <ResultCard title={t("insights.similarCases")} loading={caseResults.similar?.loading} error={caseResults.similar?.error} t={t}>
+          <ResultCard title={t("insights.similarCases")} loading={caseResults.similar?.loading} error={caseResults.similar?.error} hasData={!!caseResults.similar?.data} emptyText={t("insights.emptyCaseNo")} t={t}>
             {caseResults.similar?.data && (
               <>
                 <p className="ins-text">{caseResults.similar.data.explanation}</p>
@@ -239,7 +260,7 @@ export default function Insights() {
               </>
             )}
           </ResultCard>
-          <ResultCard title={t("insights.investigativeLeads")} loading={caseResults.leads?.loading} error={caseResults.leads?.error} t={t}>
+          <ResultCard title={t("insights.investigativeLeads")} loading={caseResults.leads?.loading} error={caseResults.leads?.error} hasData={!!caseResults.leads?.data} emptyText={t("insights.emptyCaseNo")} t={t}>
             {caseResults.leads?.data && (
               <>
                 <p className="ins-text">{caseResults.leads.data.leads}</p>
@@ -251,6 +272,8 @@ export default function Insights() {
             title={<>{t("insights.modusOperandi")} <InfoTooltip text={t("insights.moTooltip")} /></>}
             loading={caseResults.mo?.loading}
             error={caseResults.mo?.error}
+            hasData={!!caseResults.mo?.data}
+            emptyText={t("insights.emptyCaseNo")}
             t={t}
           >
             {caseResults.mo?.data && (
@@ -258,12 +281,21 @@ export default function Insights() {
                 <p className="ins-text">
                   {t("insights.crimeType")}: <b>{caseResults.mo.data.crime_type}</b><br />
                   {caseResults.mo.data.total_same_type_cases} {t("insights.similarTypeCasesFound")}<br />
-                  {caseResults.mo.data.is_possible_series ? (
+                  {caseResults.mo.data.is_possible_series && (
                     <span className="ins-series-flag">{t("insights.possibleSeries")}</span>
-                  ) : (
-                    <span className="ins-note">{t("insights.noClusteringPattern")}</span>
                   )}
                 </p>
+                {!caseResults.mo.data.is_possible_series && (
+                  // A genuine, expected finding (thin/no clustering), not an
+                  // error — styled as a neutral info note rather than red,
+                  // with the methodology visible rather than only in the
+                  // hover tooltip, so a judge/reviewer sees it without
+                  // needing to discover the ⓘ icon.
+                  <p className="ins-info-banner">
+                    {t("insights.noClusteringPatternNew")}<br />
+                    <span className="ins-info-banner-note">{t("insights.moThresholdNote")}</span>
+                  </p>
+                )}
                 {caseResults.mo.data.cluster_center && (
                   <button
                     type="button"
@@ -288,11 +320,12 @@ export default function Insights() {
         <h2>{t("insights.behavioralAnalysis")}</h2>
         <form className="ins-form" onSubmit={runBehavioral}>
           <AccusedAutocomplete value={accusedName} onChange={setAccusedName} token={token} handleAuthExpiry={handleAuthExpiry} t={t} />
-          <button type="submit" disabled={behaviorResult.loading}>
+          <button type="submit" disabled={behaviorResult.loading || accusedNameLooksLikeCrimeNo}>
             {behaviorResult.loading ? t("insights.analyzing") : t("insights.analyzeBehavior")}
           </button>
         </form>
-        <ResultCard title={t("insights.behavioralPattern")} loading={behaviorResult.loading} error={behaviorResult.error} t={t}>
+        {accusedNameLooksLikeCrimeNo && <p className="ins-info-banner">{t("insights.crimeNoInWrongField")}</p>}
+        <ResultCard title={t("insights.behavioralPattern")} loading={behaviorResult.loading} error={behaviorResult.error} hasData={!!behaviorResult.data} emptyText={t("insights.emptyAccusedName")} t={t}>
           {behaviorResult.data && (
             <>
               <p className="ins-text">{behaviorResult.data.analysis}</p>

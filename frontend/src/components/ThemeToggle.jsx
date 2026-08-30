@@ -3,8 +3,8 @@ import { SunIcon, MoonIcon } from "./icons";
 import "./ThemeToggle.css";
 
 export default function ThemeToggle({ compact }) {
-  const { theme, toggleTheme } = useTheme();
-  const isDark = theme === "dark";
+  const { effectiveTheme, toggleTheme } = useTheme();
+  const isDark = effectiveTheme === "dark";
   return (
     <button
       type="button"

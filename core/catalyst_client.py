@@ -84,6 +84,53 @@ def execute_zcql(query: str) -> list:
     raise CatalystQueryError(f"Database query failed (status {response.status_code})")
 
 
+def fetch_all_rows(table: str, columns: list[str], where_clause: str = "", page_size: int = 300, max_pages: int = 30) -> list[dict]:
+    """Full-table (or full-filtered-result) scan via CURSOR pagination —
+    `WHERE {table}.ROWID > :last_seen ORDER BY {table}.ROWID LIMIT page_size`
+    — not offset-based `LIMIT page*n,n`.
+
+    REAL BUG FOUND 2026-08-23 (codebase-wide pagination audit): offset-based
+    ZCQL pagination without ORDER BY can return the same row at both the end
+    of one page and the start of the next (live-reproduced on CaseMaster and
+    Accused). Adding ORDER BY did NOT fix it — the duplicate persisted even
+    with `ORDER BY {table}.ROWID` added to the exact same query. Worse: the
+    duplicate isn't just cosmetic — it silently consumes a "slot" a different,
+    genuinely unique row should have occupied, so that row is never fetched by
+    ANY page. Directly measured on the live CaseMaster table (3000 rows, all
+    with real coordinates): offset-based pagination + ROWID dedup on receipt
+    still returned only 2999 unique rows — one real case was gone, not just
+    double-counted. Cursor pagination (this function) was then verified on the
+    same table/data and returned the complete, correct 3000/3000 with zero
+    duplication and zero loss.
+
+    columns should NOT include ROWID — it's always selected and used as the
+    cursor regardless of whether a caller wants it in the result too.
+    where_clause, if given, must be a complete ` WHERE ...` string (its own
+    leading space, as built by this codebase's usual condition-joiners) with
+    no ROWID condition of its own — this function owns the ROWID range
+    entirely and AND's its own cursor condition onto whatever is passed in.
+    """
+    select_cols = ", ".join(f"{table}.{c}" for c in [*dict.fromkeys(["ROWID", *columns])])
+    rows_out = []
+    last_rowid = 0
+    for _ in range(max_pages):
+        cursor_cond = f"{table}.ROWID > {last_rowid}"
+        combined_where = f"{where_clause} AND {cursor_cond}" if where_clause else f" WHERE {cursor_cond}"
+        query = f"SELECT {select_cols} FROM {table}{combined_where} ORDER BY {table}.ROWID LIMIT {page_size}"
+        rows = execute_zcql(query)
+        if not rows:
+            break
+        for r in rows:
+            row = r.get(table, r)
+            rows_out.append(row)
+        last_rowid = max(int(r.get(table, r)["ROWID"]) for r in rows)
+        if len(rows) < page_size:
+            break
+    else:
+        logger.warning(f"fetch_all_rows hit the {max_pages}-page cap on {table} — results may be incomplete")
+    return rows_out
+
+
 def insert_row(table_name: str, data: dict) -> dict:
     """Insert a single row into a Catalyst Data Store table.
 

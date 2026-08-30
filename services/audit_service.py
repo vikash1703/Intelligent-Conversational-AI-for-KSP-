@@ -33,6 +33,23 @@ _LANGUAGE_PREF_MARKER = "[language_preference] "
 # exactly when, why, and for WHICH provider the active LLM routing changed,
 # not just infer it from response latency after the fact.
 _PROVIDER_EVENT_MARKER = "[provider_event] "
+# Same marker-prefix convention, for the FIR Registration module (added
+# 2026-08-28) — the accountability trail the user explicitly asked for:
+# every registration ATTEMPT (success and failure both) gets its own row,
+# with the full submitted payload preserved in response_text, so a real FIR
+# is always traceable back to exactly who filed it, when, and what they
+# submitted — not just the fact that a CaseMaster row exists.
+_FIR_REGISTRATION_MARKER = "[fir_registration] "
+# Same marker-prefix convention, for FIR amendments (added 2026-08-28) — a
+# separate marker from registration so the two are independently greppable:
+# "how many times has this crime_no been amended, and by whom" is a
+# different accountability question than "who originally filed it."
+_FIR_AMENDMENT_MARKER = "[fir_amendment] "
+# Same marker-prefix convention, for the Chargesheet Draft feature (added
+# 2026-08-29) — one row per generation attempt, so a chargesheet draft
+# actually used in court can always be traced back to who generated it and
+# when, per the feature's explicit audit requirement.
+_CHARGESHEET_DRAFT_MARKER = "[chargesheet_draft] "
 
 
 def log_provider_event(event: str, reason: str, provider: str = "zia", user_id: str = "system", session_id: str = "system") -> None:
@@ -192,6 +209,108 @@ def get_session_language_preference(session_id: str) -> str | None:
                 continue
             return payload.get("language")
     return None
+
+
+def log_fir_registration(
+    user_id: str,
+    role_name: str,
+    ip_address: str,
+    success: bool,
+    payload: dict,
+    crime_no: str | None = None,
+    error: str | None = None,
+) -> None:
+    """Persists one FIR registration attempt — success AND failure both (per
+    the module's explicit accountability requirement), including the full
+    submitted payload (query_text) so what the officer actually typed is
+    preserved verbatim, not just a summary. response_text carries the
+    outcome: the generated crime_no on success, or the error on failure.
+    session_id has no real session concept for a one-shot form submission —
+    "fir" is used as a fixed, greppable value rather than a fabricated UUID."""
+    try:
+        insert_row(
+            settings.AUDIT_LOG_TABLE,
+            {
+                "user_id": user_id,
+                "role_name": role_name,
+                "session_id": "fir",
+                "query_text": json.dumps(payload, default=str)[:9000],
+                "response_text": _FIR_REGISTRATION_MARKER + json.dumps({
+                    "success": success,
+                    "crime_no": crime_no,
+                    "error": error,
+                }),
+                "ip_address": ip_address,
+                "entry_timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
+            },
+        )
+    except Exception as e:
+        logger.error(f"Failed to persist FIR registration audit log: {str(e)}")
+
+
+def log_fir_amendment(
+    user_id: str,
+    role_name: str,
+    ip_address: str,
+    crime_no: str,
+    success: bool,
+    payload: dict,
+    error: str | None = None,
+) -> None:
+    """Persists one FIR amendment attempt — same success/failure-both,
+    full-payload-preserved pattern as log_fir_registration, its own marker
+    so amendments and original registrations are independently traceable
+    for the same crime_no."""
+    try:
+        insert_row(
+            settings.AUDIT_LOG_TABLE,
+            {
+                "user_id": user_id,
+                "role_name": role_name,
+                "session_id": "fir",
+                "query_text": json.dumps(payload, default=str)[:9000],
+                "response_text": _FIR_AMENDMENT_MARKER + json.dumps({
+                    "success": success,
+                    "crime_no": crime_no,
+                    "error": error,
+                }),
+                "ip_address": ip_address,
+                "entry_timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
+            },
+        )
+    except Exception as e:
+        logger.error(f"Failed to persist FIR amendment audit log: {str(e)}")
+
+
+def log_chargesheet_draft_generation(
+    user_id: str,
+    role_name: str,
+    ip_address: str,
+    crime_no: str,
+    success: bool,
+    error: str | None = None,
+) -> None:
+    """Persists one chargesheet-draft generation attempt — same marker-
+    prefix, best-effort-never-raises pattern as log_fir_registration/
+    log_fir_amendment. session_id fixed to "chargesheet" for the same reason
+    "fir" is used there: no real session concept for a one-shot action."""
+    try:
+        insert_row(
+            settings.AUDIT_LOG_TABLE,
+            {
+                "user_id": user_id,
+                "role_name": role_name,
+                "session_id": "chargesheet",
+                "query_text": crime_no,
+                "response_text": _CHARGESHEET_DRAFT_MARKER + json.dumps({
+                    "success": success, "crime_no": crime_no, "error": error,
+                }),
+                "ip_address": ip_address,
+                "entry_timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
+            },
+        )
+    except Exception as e:
+        logger.error(f"Failed to persist chargesheet draft audit log: {str(e)}")
 
 
 def log_chat_query(

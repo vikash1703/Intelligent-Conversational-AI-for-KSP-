@@ -1,7 +1,7 @@
 import logging
 import math
 
-from core.catalyst_client import execute_zcql
+from core.catalyst_client import fetch_all_rows
 from data.karnataka_census_reference import KARNATAKA_DISTRICT_CENSUS
 from chat.llm_provider import rag_answer_with_failover
 
@@ -65,28 +65,22 @@ def _nearest_district(lat: float, lon: float) -> str:
 
 
 def _fetch_case_coordinates() -> list[tuple[float, float]]:
-    """Every CaseMaster row's real lat/long, paginated the same way
-    analytics_service.paginate_case_dates() does. Rows with a null
-    coordinate (shouldn't exist live, but defensive) are skipped rather than
-    guessed at."""
+    """Every CaseMaster row's real lat/long. Rows with a null coordinate
+    (shouldn't exist live, but defensive) are skipped rather than guessed at.
+
+    UPGRADED 2026-08-23 (codebase-wide pagination audit) to cursor-based
+    pagination (core.catalyst_client.fetch_all_rows) — the previous exactly-
+    10-pages-for-3000-rows offset approach (see its own prior comment, still
+    worth keeping in mind) only prevented an 11th spillover page from
+    appearing; it did NOT prevent a duplicate+omission pair from hiding inside
+    those same 10 pages, which offset pagination is provably capable of (see
+    fetch_all_rows' own docstring — measured directly on this exact table)."""
+    rows = fetch_all_rows("CaseMaster", ["latitude", "longitude"], page_size=_PAGE_SIZE, max_pages=_MAX_PAGES)
     coords = []
-    for page in range(_MAX_PAGES):
-        offset = page * _PAGE_SIZE
-        rows = execute_zcql(
-            "SELECT CaseMaster.latitude, CaseMaster.longitude FROM CaseMaster "
-            f"LIMIT {offset},{_PAGE_SIZE}"
-        )
-        if not rows:
-            break
-        for r in rows:
-            row = r.get("CaseMaster", r)
-            lat, lon = row.get("latitude"), row.get("longitude")
-            if lat is not None and lon is not None:
-                coords.append((float(lat), float(lon)))
-        if len(rows) < _PAGE_SIZE:
-            break
-    else:
-        logger.warning(f"Hit the {_MAX_PAGES}-page cap fetching case coordinates — results may be incomplete")
+    for row in rows:
+        lat, lon = row.get("latitude"), row.get("longitude")
+        if lat is not None and lon is not None:
+            coords.append((float(lat), float(lon)))
     return coords
 
 

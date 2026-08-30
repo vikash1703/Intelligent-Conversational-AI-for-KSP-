@@ -1,8 +1,9 @@
-"""One-off: reset the KSPTEST admin user's password since the original
-plaintext was never persisted anywhere (only its bcrypt hash was written to
-AppUser at creation time) — see memory note from 2026-07-24.
+"""One-off: reset an AppUser's password since the original plaintext was never
+persisted anywhere (only its bcrypt hash was written to AppUser at creation
+time) — see memory note from 2026-07-24.
 
-Usage: python scripts/reset_ksptest_password.py
+Usage: python scripts/reset_ksptest_password.py [USERNAME]
+Defaults to KSPTEST if no username is given.
 """
 import secrets
 import string
@@ -14,7 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.catalyst_client import execute_zcql, update_rows, zcql_escape
 from core.security import hash_password
 
-USERNAME = "KSPTEST"
+USERNAME = sys.argv[1] if len(sys.argv) > 1 else "KSPTEST"
 
 
 def generate_password(length: int = 16) -> str:

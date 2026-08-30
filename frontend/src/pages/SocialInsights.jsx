@@ -217,7 +217,10 @@ export default function SocialInsights() {
   }
 
   useEffect(() => {
-    api.get("/social/correlations", token)
+    // timeoutMs added 2026-08-24 (codebase-wide timeout audit) — this page's
+    // own load, no timeout previously meant a stall left it on "Loading…"
+    // forever with no error.
+    api.get("/social/correlations", token, { timeoutMs: 15000 })
       .then((d) => { setData(d); setLoading(false); })
       .catch((err) => {
         if (handleAuthExpiry(err)) return;

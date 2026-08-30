@@ -43,6 +43,31 @@ def get_known_crime_types() -> list[str]:
     return _crime_types_cache
 
 
+_case_statuses_cache: list[str] | None = None
+
+
+def get_known_case_statuses() -> list[str]:
+    """The real, distinct CaseStatus names (added 2026-08-24 — REAL BUG FIXED:
+    "how many cases are charge sheeted" used to silently answer with the
+    unfiltered total (3,000, should have been 994) because this aggregation
+    path had no concept of case status at all — crime_type and district were
+    filterable dimensions, status wasn't, so a status word either got ignored
+    (falsely confident wrong answer) or wasn't recognized (fell through to a
+    generic response) depending on phrasing, with no consistent honest
+    "I don't recognize that" the way an unrecognized crime_type/district
+    already got). Same fetch-once-not-hardcoded convention as
+    get_known_crime_types() above — local import, not module-level: a
+    module-level one would pull in services.db_service (via
+    timeline_service), which is heavier than this small chat-layer module
+    should import at load time for every caller, not just the aggregate-query
+    path that actually needs it."""
+    global _case_statuses_cache
+    if _case_statuses_cache is None:
+        from services.timeline_service import get_case_status_labels
+        _case_statuses_cache = sorted(set(get_case_status_labels().values()))
+    return _case_statuses_cache
+
+
 def get_dataset_date_span() -> tuple[str, str]:
     """(earliest, latest) CrimeRegisteredDate across the whole dataset — one
     cached fetch backing both get_dataset_anchor_date() (the resolution

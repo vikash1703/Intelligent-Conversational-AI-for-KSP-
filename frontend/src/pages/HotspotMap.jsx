@@ -51,6 +51,30 @@ function choroplethColor(rate) {
   return CHOROPLETH_COLORS[CHOROPLETH_COLORS.length - 1];
 }
 
+// Forecast projected counts have a much smaller, more variable range than
+// crime-rate-per-lakh — fixed breaks tuned to the unfiltered range would put
+// everything in one bucket the moment a crime-type filter narrows it (a
+// single type's projections can run 0-2 where "all types" runs 1-7). Breaks
+// are instead computed from whatever real values actually came back each
+// time (quantile-style: 4 cut points spanning the real min-max), so the
+// 5-color scale always uses its full range regardless of filter.
+function computeForecastBreaks(values) {
+  const real = values.filter((v) => v != null);
+  if (real.length === 0) return [1, 2, 3, 4];
+  const max = Math.max(...real);
+  if (max <= 0) return [1, 2, 3, 4];
+  const step = max / 5;
+  return [1, 2, 3, 4].map((i) => Math.max(1, Math.round(step * i)));
+}
+
+function forecastColor(value, breaks) {
+  if (value == null) return null;
+  for (let i = 0; i < breaks.length; i++) {
+    if (value <= breaks[i]) return CHOROPLETH_COLORS[i];
+  }
+  return CHOROPLETH_COLORS[CHOROPLETH_COLORS.length - 1];
+}
+
 // This project's live District/census reference table only carries 10 of
 // Karnataka's 31 real districts (see karnataka_census_reference.py), and the
 // district boundary file is an older-vintage GADM extract that predates a
@@ -266,6 +290,63 @@ function ChoroplethLayer({ geojson, rates, theme }) {
   return <GeoJSON key={`${theme}-choropleth`} data={geojson} style={style} onEachFeature={onEachFeature} />;
 }
 
+// The Forecast layer — one polygon per district, filled by projected case
+// count at the selected horizon (services/forecast_service.
+// get_district_hotspot_forecast), same real-OLS-regression-per-district
+// approach as the Analytics page's own forecast panel, just run once per
+// district bucket instead of once statewide. Tooltip surfaces the real
+// recent monthly average AND trend slope alongside the projection — the
+// slope is near-zero for every district (live-verified while building this),
+// so showing it plainly here is what keeps this honest rather than implying
+// a rise/fall pattern the data doesn't actually have.
+function ForecastLayer({ geojson, forecast, horizon, theme, t }) {
+  if (!geojson || !forecast) return null;
+  const byDistrict = {};
+  forecast.districts.forEach((d) => { byDistrict[d.district] = d; });
+  const values = forecast.districts.map((d) => d.projections[horizon]);
+  const breaks = computeForecastBreaks(values);
+  const style = (feature) => {
+    const geoName = feature.properties.district;
+    const realName = Object.keys(DISTRICT_NAME_ALIASES).find((k) => DISTRICT_NAME_ALIASES[k] === geoName) || geoName;
+    const row = byDistrict[realName];
+    const color = row ? forecastColor(row.projections[horizon], breaks) : null;
+    return {
+      color: DISTRICT_COLOR[theme],
+      weight: 1.2,
+      fillColor: color || (theme === "dark" ? "#2A3040" : "#DBE1EA"),
+      fillOpacity: color ? 0.75 : 0.25,
+    };
+  };
+  const onEachFeature = (feature, layer) => {
+    const geoName = feature.properties.district;
+    const realName = Object.keys(DISTRICT_NAME_ALIASES).find((k) => DISTRICT_NAME_ALIASES[k] === geoName) || geoName;
+    const row = byDistrict[realName];
+    layer.bindTooltip(
+      row
+        ? `<b>${realName}</b><br/>${t("map.forecastProjected")}: ${row.projections[horizon]} ${t("map.forecastCases")}<br/>`
+          + `${t("map.forecastRecentAvg")}: ${row.recent_monthly_avg}/mo · ${t("map.forecastSlope")}: ${row.trend_slope_per_month >= 0 ? "+" : ""}${row.trend_slope_per_month}/mo`
+        : `<b>${realName}</b><br/>${t("map.forecastNoData")}`,
+      { sticky: true }
+    );
+  };
+  return <GeoJSON key={`${theme}-forecast-${horizon}`} data={geojson} style={style} onEachFeature={onEachFeature} />;
+}
+
+function ForecastLegend({ forecast, horizon, t }) {
+  if (!forecast) return null;
+  const values = forecast.districts.map((d) => d.projections[horizon]);
+  const breaks = computeForecastBreaks(values);
+  return (
+    <div className="map-legend">
+      <span className="map-legend-title">{t("map.forecastLegendTitle")}</span>
+      <div className="map-legend-scale">
+        {CHOROPLETH_COLORS.map((c) => <span key={c} className="map-legend-swatch" style={{ background: c }} />)}
+      </div>
+      <div className="map-legend-labels"><span>0</span><span>{breaks[breaks.length - 1]}+</span></div>
+    </div>
+  );
+}
+
 function HeatLegend({ t }) {
   return (
     <div className="map-legend">
@@ -299,7 +380,7 @@ function ChoroplethLegend({ t }) {
 export default function HotspotMap() {
   const { token, logout } = useAuth();
   const { t } = useLanguage();
-  const { theme } = useTheme();
+  const { effectiveTheme: theme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [allPoints, setAllPoints] = useState([]);
@@ -307,7 +388,7 @@ export default function HotspotMap() {
   const [districtGeoJson, setDistrictGeoJson] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-  // "population" (default, honest choropleth) | "heat" | "points" (raw, secondary)
+  // "population" (default, honest choropleth) | "heat" | "points" (raw, secondary) | "forecast"
   const [view, setView] = useState("population");
   const [showDistricts, setShowDistricts] = useState(false);
   // null until the real crime types are known from the first fetch, at which
@@ -316,6 +397,14 @@ export default function HotspotMap() {
   const [selectedTypes, setSelectedTypes] = useState(null);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  // Forecast layer (Tier 1 item 8, added 2026-08-24) — fetched only when the
+  // Forecast tab is actually opened, not on page load (this is a secondary,
+  // triggered view, same convention as every other on-demand fetch in this
+  // app per the codebase-wide timeout audit's on-load/triggered split).
+  const [forecast, setForecast] = useState(null);
+  const [forecastLoading, setForecastLoading] = useState(false);
+  const [forecastError, setForecastError] = useState("");
+  const [forecastHorizon, setForecastHorizon] = useState("3m");
   // { lat, lon } from Insights' "View on map" button, or null for the default
   // whole-state view — read once on arrival, same one-shot convention Cases.jsx/
   // Chat.jsx/Network.jsx already use for their own router-state deep links.
@@ -335,7 +424,11 @@ export default function HotspotMap() {
   }
 
   useEffect(() => {
-    api.get("/analytics/hotspots", token)
+    // timeoutMs added 2026-08-24 (codebase-wide timeout audit) — this page's
+    // own load, no timeout previously meant a stall left the map on
+    // "Loading…" forever (setLoading(false) only ran inside .then/.catch,
+    // the exact Alerts failure pattern this audit was started from).
+    api.get("/analytics/hotspots", token, { timeoutMs: 15000 })
       .then((data) => {
         const withCoords = data.filter((p) => p.latitude && p.longitude);
         setAllPoints(withCoords);
@@ -347,7 +440,7 @@ export default function HotspotMap() {
         setError(err.message);
         setLoading(false);
       });
-    api.get("/social/district-crime-rates", token).then((data) => setDistrictRates(data.districts)).catch(() => {});
+    api.get("/social/district-crime-rates", token, { timeoutMs: 15000 }).then((data) => setDistrictRates(data.districts)).catch(() => {});
     // District boundaries are needed both for the Population-weighted choropleth
     // (the default view) and to clip the raw heatmap/points views to Karnataka's
     // real shape, so this loads once up front rather than lazily per-toggle.
@@ -366,6 +459,29 @@ export default function HotspotMap() {
     () => Array.from(new Set(allPoints.map((p) => p.crime_type).filter(Boolean))).sort(),
     [allPoints]
   );
+
+  // Forecast data fetched only when the Forecast tab is open, and re-fetched
+  // when the same crime-type chips used by the other views change while it's
+  // open (reuses selectedTypes rather than a second, separate filter UI —
+  // "same buttons as existing map filters"). All 3 horizons (1/3/6 months)
+  // come back in one payload, so switching the horizon selector below is a
+  // pure client-side re-read, no re-fetch.
+  const selectedTypesKey = selectedTypes ? Array.from(selectedTypes).sort().join(",") : "";
+  useEffect(() => {
+    if (view !== "forecast" || !selectedTypes) return;
+    setForecastLoading(true);
+    setForecastError("");
+    const allSelected = crimeTypeOptions.length > 0 && selectedTypes.size === crimeTypeOptions.length;
+    const params = allSelected ? "" : `?crime_types=${encodeURIComponent(Array.from(selectedTypes).join(","))}`;
+    api.get(`/analytics/hotspot-forecast${params}`, token, { timeoutMs: 15000 })
+      .then(setForecast)
+      .catch((err) => {
+        if (handleAuthExpiry(err)) return;
+        setForecastError(err.message);
+      })
+      .finally(() => setForecastLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, selectedTypesKey]);
 
   const filteredPoints = useMemo(() => {
     return allPoints.filter((p) => {
@@ -426,10 +542,12 @@ export default function HotspotMap() {
           <button className={view === "population" ? "active" : ""} onClick={() => setView("population")}>{t("map.populationWeighted")}</button>
           <button className={view === "heat" ? "active" : ""} onClick={() => setView("heat")}>{t("map.heatmap")}</button>
           <button className={view === "points" ? "active" : ""} onClick={() => setView("points")}>{t("map.points")}</button>
+          <button className={view === "forecast" ? "active" : ""} onClick={() => setView("forecast")}>{t("map.forecast")}</button>
         </div>
       </div>
 
       <p className="map-synthetic-note">⚠ {t("map.syntheticNote")}</p>
+      {view === "forecast" && <p className="map-synthetic-note">⚠ {t("map.forecastNote")}</p>}
 
       <div className="map-filters">
         <div className="map-filter-types">
@@ -446,15 +564,33 @@ export default function HotspotMap() {
             </button>
           ))}
         </div>
-        <label className="map-filter-date">
-          {t("map.fromDate")}
-          <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
-        </label>
-        <label className="map-filter-date">
-          {t("map.toDate")}
-          <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
-        </label>
-        {view !== "population" && (
+        {view !== "forecast" && (
+          <>
+            <label className="map-filter-date">
+              {t("map.fromDate")}
+              <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+            </label>
+            <label className="map-filter-date">
+              {t("map.toDate")}
+              <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+            </label>
+          </>
+        )}
+        {view === "forecast" && (
+          <div className="map-horizon-toggle">
+            {["1m", "3m", "6m"].map((h) => (
+              <button
+                key={h}
+                type="button"
+                className={forecastHorizon === h ? "active" : ""}
+                onClick={() => setForecastHorizon(h)}
+              >
+                {t(`map.horizon${h}`)}
+              </button>
+            ))}
+          </div>
+        )}
+        {view !== "population" && view !== "forecast" && (
           <label className="map-district-toggle">
             <input type="checkbox" checked={showDistricts} onChange={(e) => setShowDistricts(e.target.checked)} />
             {t("map.districtBoundaries")}
@@ -474,13 +610,17 @@ export default function HotspotMap() {
           />
           <FocusView focus={focus} />
           {view === "population" && <ChoroplethLayer geojson={districtGeoJson} rates={districtRates} theme={theme} />}
-          {view !== "population" && showDistricts && <DistrictLayer geojson={districtGeoJson} theme={theme} />}
+          {view !== "population" && view !== "forecast" && showDistricts && <DistrictLayer geojson={districtGeoJson} theme={theme} />}
           {view === "heat" && <HeatLayer points={heatPoints} theme={theme} />}
           {view === "points" && <ClusterLayer points={clippedPoints} theme={theme} navigate={navigate} t={t} />}
+          {view === "forecast" && <ForecastLayer geojson={districtGeoJson} forecast={forecast} horizon={forecastHorizon} theme={theme} t={t} />}
         </MapContainer>
         {view === "population" && <ChoroplethLegend t={t} />}
         {view === "heat" && <HeatLegend t={t} />}
+        {view === "forecast" && !forecastLoading && !forecastError && <ForecastLegend forecast={forecast} horizon={forecastHorizon} t={t} />}
         {view === "population" && <p className="map-missing-districts-note">{t("map.missingDistricts")}</p>}
+        {view === "forecast" && forecastLoading && <p className="map-missing-districts-note">{t("map.loading")}</p>}
+        {view === "forecast" && forecastError && <p className="map-missing-districts-note">{forecastError}</p>}
       </div>
     </div>
   );

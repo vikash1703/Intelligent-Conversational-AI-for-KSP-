@@ -1,6 +1,8 @@
+import logging
 import os
+import threading
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from api.routers.auth import router as auth_router
 from api.routers.cases import router as cases_router
@@ -15,10 +17,19 @@ from api.routers.financial import router as financial_router
 from api.routers.voice import router as voice_router
 from api.routers.social import router as social_router
 from api.routers.legal import router as legal_router
+from api.routers.quality import router as quality_router
+from api.routers.custody import router as custody_router
+from api.routers.compliance import router as compliance_router
+from api.routers.chargesheet import router as chargesheet_router
 from core.middleware import AuditLogMiddleware
 from core.exceptions import AppException, app_exception_handler
 from chat.answer_cache import prewarm as prewarm_answer_cache
 from services.legal_kb_service import prewarm_ksp_stats
+from core import ttl_cache
+from core.security import get_current_user
+from schemas.auth_dto import CurrentUser
+
+logger = logging.getLogger("Main")
 
 app = FastAPI(title="KSP Chatbot API")
 
@@ -65,6 +76,32 @@ app.include_router(financial_router, prefix="/api/v1/financial", tags=["Financia
 app.include_router(voice_router, prefix="/api/v1/voice", tags=["Voice"])
 app.include_router(social_router, prefix="/api/v1/social", tags=["Social Insights"])
 app.include_router(legal_router, prefix="/api/v1/legal", tags=["Legal Reference"])
+app.include_router(quality_router, prefix="/api/v1/quality", tags=["Data Quality"])
+app.include_router(custody_router, prefix="/api/v1/custody", tags=["Custody"])
+app.include_router(compliance_router, prefix="/api/v1/compliance", tags=["Compliance"])
+app.include_router(chargesheet_router, prefix="/api/v1/chargesheet", tags=["Chargesheet Management"])
+
+def _prewarm_analytics_caches():
+    # Runs on a background thread (see startup event below) so it never delays
+    # the app becoming ready — each of these was live-measured at 2.7-3.3s
+    # uncached, and none of them depend on anything the two prewarms above
+    # don't already establish. Populates core.ttl_cache so the FIRST real
+    # dashboard/hotspot-map load during a demo is already fast instead of
+    # paying the full cost live in front of an audience.
+    from services.analytics_service import get_crime_trends, get_seasonal_trends
+    from services.forecast_service import forecast_crime_trend
+    from services.scoring_service import get_early_warning_alerts
+    from services.db_service import get_crime_hotspots
+    try:
+        get_crime_trends()
+        get_seasonal_trends()
+        forecast_crime_trend(months_ahead=6)
+        get_early_warning_alerts()
+        get_crime_hotspots()
+        logger.info("Analytics cache warm-up complete")
+    except Exception as e:
+        logger.warning(f"Analytics cache warm-up failed (will compute on first real request instead): {e}")
+
 
 @app.on_event("startup")
 def _prewarm_caches():
@@ -81,6 +118,16 @@ def _prewarm_caches():
     # — called explicitly too so this stays warm even if that prewarm list
     # ever changes.
     prewarm_ksp_stats()
+    threading.Thread(target=_prewarm_analytics_caches, daemon=True).start()
+
+
+@app.post("/api/v1/analytics/cache/clear", tags=["Analytics"])
+def clear_analytics_cache(current_user: CurrentUser = Depends(get_current_user)):
+    """Manual cache-bust for the TTL-cached analytics/forecast/early-warning
+    endpoints (core/ttl_cache) — use after the underlying data actually
+    changes (e.g. a fresh backfill) instead of waiting out the 15-minute TTL."""
+    removed = ttl_cache.clear()
+    return {"cleared_entries": removed}
 
 
 @app.get("/")

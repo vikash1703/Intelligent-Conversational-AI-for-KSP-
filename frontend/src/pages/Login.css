@@ -11,12 +11,12 @@
 
 .login-card {
   width: 100%;
-  max-width: 380px;
+  max-width: 480px;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  padding: 36px 32px;
+  padding: 26px 32px;
   text-align: center;
 }
 
@@ -89,13 +89,139 @@
 .login-sub {
   font-size: 13px;
   color: var(--muted);
-  margin: 0 0 28px;
+  margin: 0 0 18px;
+}
+
+/* Quick role access (2026-08-26) — 4 cards, one per real Karnataka Police
+   rank (DGP/IGP/SP/Inspector), so a judge/reviewer can drop straight into
+   any jurisdiction's real scoped view without knowing test credentials. */
+.login-role-access {
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+.login-role-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 2px;
+}
+
+.login-role-hint {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+
+/* 2x2 by default (works at any width, including 390px mobile — verified).
+   A single row of 4 kicks in once there's room (see media query below) —
+   real bug fixed 2026-08-26: at 2x2 with the fuller Kannada strings, this
+   section alone ran ~180px taller than English, pushing the manual sign-in
+   button below the fold on an ordinary laptop viewport (reproduced live:
+   1350x880, sign-in button fully clipped, required scrolling to reach it —
+   not acceptable for the page a judge/officer lands on first). A single
+   row is short regardless of language; scope text truncates instead of
+   wrapping (see .login-role-scope) so no language can re-trigger this. */
+.login-role-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+@media (min-width: 640px) {
+  .login-role-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.login-role-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-2);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+
+.login-role-card:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.login-role-card:disabled {
+  opacity: .55;
+  cursor: default;
+}
+
+.login-role-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 750;
+  letter-spacing: .02em;
+}
+
+/* Page-local tone variants (this codebase defines these per-page rather than
+   centrally — Login loads before any other page's CSS, so it can't borrow
+   Home.css's .tone-* classes). Same underlying theme.css tokens, just scoped
+   here. */
+.login-role-badge-gold { background: var(--gold-soft); color: var(--gold); }
+.login-role-badge-info { background: var(--info-bg); color: var(--info); }
+.login-role-badge-purple { background: var(--purple-bg); color: var(--purple); }
+.login-role-badge-warn { background: var(--warn-bg); color: var(--warn); }
+
+.login-role-name {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--ink);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.login-role-scope {
+  font-size: 10.5px;
+  color: var(--muted);
+  line-height: 1.3;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.login-divider::before,
+.login-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
 }
 
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   text-align: left;
 }
 
@@ -149,7 +275,7 @@
 }
 
 .login-error {
-  margin: 0;
+  margin: 0 0 14px;
   font-size: 12.5px;
   color: var(--crit);
   background: var(--crit-bg);

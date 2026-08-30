@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import ForceGraph2D from "react-force-graph-2d";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
+import { useTray } from "../context/TrayContext";
 import { api, ApiError } from "../api/client";
 import { genderLabel } from "../utils/lookups";
 import "./Network.css";
@@ -143,6 +144,7 @@ export default function Network() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
+  const { isPinned, addToTray, removeFromTray, isFull } = useTray();
   const [groups, setGroups] = useState([]);
   const [groupsError, setGroupsError] = useState("");
   const [activeGang, setActiveGang] = useState(null);
@@ -191,7 +193,10 @@ export default function Network() {
   }
 
   useEffect(() => {
-    api.get("/network/organized-groups", token)
+    // timeoutMs added 2026-08-24 (codebase-wide timeout audit) — this page's
+    // own initial load, no timeout previously meant a stall left it on
+    // whatever the pre-load empty state is, forever, with no error.
+    api.get("/network/organized-groups", token, { timeoutMs: 15000 })
       .then(setGroups)
       .catch((err) => {
         if (handleAuthExpiry(err)) return;
@@ -418,7 +423,11 @@ export default function Network() {
     if (node.type !== "person") return;
     setProfile(null);
     setProfileLoading(true);
-    api.get(`/network/profile/${encodeURIComponent(node.id)}`, token)
+    // timeoutMs added 2026-08-24 (codebase-wide timeout audit) — also fires
+    // on mount when arriving from Insights' "View in Network" button
+    // (focusAccusedId in router state), not just a node click, so this is
+    // on-load for that arrival path.
+    api.get(`/network/profile/${encodeURIComponent(node.id)}`, token, { timeoutMs: 15000 })
       .then((data) => {
         setProfile(data);
         if (data.resolved && data.name) {
@@ -793,16 +802,38 @@ export default function Network() {
                   <span className="net-details-case-label">{t("network.linkedCase")}</span>
                   <p className="net-details-case-line"><b>{profile.case.crime_type}</b> — {profile.case.crime_no}</p>
                   <p className="net-details-case-line">{t("cases.registered")} {profile.case.registered_date}</p>
-                  <button
-                    type="button"
-                    className="net-details-case-link"
-                    onClick={() => navigate("/cases", { state: { crimeNo: profile.case.crime_no } })}
-                  >
-                    {t("network.viewFullCase")}
-                  </button>
+                  <div className="net-details-case-actions">
+                    <button
+                      type="button"
+                      className="net-details-case-link"
+                      onClick={() => navigate("/cases", { state: { crimeNo: profile.case.crime_no } })}
+                    >
+                      {t("network.viewFullCase")}
+                    </button>
+                    <button
+                      type="button"
+                      className="net-details-case-link"
+                      onClick={() => (isPinned(profile.case.crime_no) ? removeFromTray(profile.case.crime_no) : addToTray(profile.case.crime_no))}
+                      disabled={!isPinned(profile.case.crime_no) && isFull}
+                    >
+                      {isPinned(profile.case.crime_no) ? t("tray.removeFromTray") : t("tray.addToTray")}
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <p className="net-details-note">{t("network.noLinkedCase")}</p>
+              )}
+              {profile.arrests && profile.arrests.length > 0 && (
+                <div className="net-details-case">
+                  <span className="net-details-case-label">{t("network.custodyLabel")}</span>
+                  <p className="cases-custody-banner">⚠ {t("cases.custodySimulatedNote")}</p>
+                  {profile.arrests.map((a) => (
+                    <p className="net-details-case-line" key={a.arrest_surrender_id}>
+                      {a.arrest_date} · {a.custody_type || "—"} · {a.bail_status || "—"}
+                      {a.next_hearing_date && ` · ${t("network.nextHearingLabel")} ${a.next_hearing_date}`}
+                    </p>
+                  ))}
+                </div>
               )}
             </div>
           )}

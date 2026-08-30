@@ -521,6 +521,11 @@
   margin: 4px 0 0;
 }
 
+.net-details-case-actions {
+  display: flex;
+  gap: 14px;
+}
+
 .net-details-case-link {
   margin-top: 8px;
   font-size: 12px;
@@ -534,6 +539,12 @@
 
 .net-details-case-link:hover {
   text-decoration: underline;
+}
+
+.net-details-case-link:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+  text-decoration: none;
 }
 
 .net-badge {

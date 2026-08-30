@@ -44,6 +44,38 @@ function detectDominantScript(text) {
 }
 
 const LANG_NAMES = { en: "English", kn: "Kannada", hi: "Hindi" };
+// Maps the backend classifier's own input_language detection (chat/router.py
+// — a plain English name like "Hindi"/"Kannada", from real language-model
+// understanding, not Unicode script) down to this app's 2-letter codes.
+// Mirrors api/routers/chat.py's _LANGUAGE_NAME_TO_CODE exactly. Added
+// 2026-08-22 so romanized/Latin-script Hindi or Kannada input ("Kolar mein
+// kitne cases hue?") gets recognized as Hindi and answered in Devanagari,
+// instead of the old pure-Unicode-script detectDominantScript() mistaking
+// it for English (no Devanagari/Kannada code points to find) and skipping
+// translation entirely — a real, visible miss for exactly the "any language,
+// no explicit toggle needed" feature this app is built around.
+const LANG_NAME_TO_CODE = { english: "en", hindi: "hi", kannada: "kn" };
+function codeFromInputLanguage(inputLanguage) {
+  if (!inputLanguage) return null;
+  return LANG_NAME_TO_CODE[inputLanguage.trim().toLowerCase()] || null;
+}
+// Combines this page's own Unicode-script detection (100% reliable whenever
+// it finds real Devanagari/Kannada code points — there's no ambiguity to
+// resolve, so it's trusted directly) with the backend's language-model
+// detection (needed for romanized/Latin-script input, which script detection
+// structurally cannot recognize, but is occasional non-deterministic LLM
+// output — live-verified 2026-08-22: the same real Devanagari question
+// ("कोलार में कितने मामले हुए?") got classified as input_language="Hindi" on
+// one call and "English" on another, a genuine classifier inconsistency, not
+// a code bug). Backend detection is therefore only CONSULTED when script
+// detection itself has nothing confident to say (clientDetected is "en" or
+// "mixed") — for real native-script input, the reliable client-side signal
+// always wins over the occasionally-wrong backend one.
+function resolveReplyLang(overrideLang, backendInputLanguage, clientDetected) {
+  if (overrideLang) return overrideLang;
+  if (clientDetected && clientDetected !== "en" && clientDetected !== "mixed") return clientDetected;
+  return codeFromInputLanguage(backendInputLanguage) || clientDetected;
+}
 // ElevenLabs' STT reports the detected language as an ISO-639-3 code — map the
 // three this app supports down to the 2-letter codes used everywhere else here.
 const STT_LANG_MAP = { eng: "en", kan: "kn", hin: "hi" };
@@ -212,7 +244,7 @@ export default function Chat() {
   // label site-wide (see LanguageContext) — one switcher (the AppShell top-bar
   // one) controls both the static chrome AND which language the assistant's
   // replies render in, so this page no longer needs its own separate toggle.
-  const { language, setLanguage, t } = useLanguage();
+  const { language, t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const [messages, setMessages] = useState([]);
@@ -271,7 +303,8 @@ export default function Chat() {
   // same "cheap read-only summary, not a full dashboard payload" spirit as
   // Home.jsx's own stats tiles.
   useEffect(() => {
-    api.get("/analytics/summary", token).then(setDatasetSummary).catch(() => {});
+    // timeoutMs added 2026-08-24 (codebase-wide timeout audit).
+    api.get("/analytics/summary", token, { timeoutMs: 15000 }).then(setDatasetSummary).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -297,7 +330,9 @@ export default function Chat() {
   }
 
   function loadSessions() {
-    api.get("/chat/sessions", token)
+    // timeoutMs added 2026-08-24 (codebase-wide timeout audit) — fires on
+    // mount (sidebar's on-load session list).
+    api.get("/chat/sessions", token, { timeoutMs: 15000 })
       .then((data) => setSessions(data))
       .catch((err) => {
         if (handleAuthExpiry(err)) return;
@@ -612,6 +647,182 @@ export default function Chat() {
   // from ElevenLabs' own STT language detection, so it's passed straight through
   // and never re-guessed. viaVoice controls whether the reply is auto-spoken back
   // once ready (a typed question never triggers unsolicited audio playback).
+  // Finalizes an assistant reply from a "data"-shaped object — the exact
+  // same shape POST /chat/message's JSON response has, AND the shape the
+  // streaming path assembles from /chat/stream's final "done" SSE event
+  // (see api/routers/chat.py: both endpoints return the same fields on
+  // purpose). Extracted so the non-streaming fallback and the streaming
+  // "done" handler share one implementation instead of two copies that
+  // could drift — this is the exact logic sendMessage always ran inline
+  // here, unchanged in behavior.
+  //
+  // alreadyRevealed=true skips the typewriter reveal-from-scratch animation
+  // — used when the English text was already shown live, token by token, as
+  // it streamed in (see sendMessageStreaming below); re-running the reveal
+  // over the same already-visible text would restart it from character 0,
+  // discarding the real streaming effect the user just watched happen.
+  async function applyAssistantReply(data, { isNewSession, viaVoice, detected, assistantIndex, raw, alreadyRevealed = false }) {
+    setSessionId(data.session_id);
+    touchSessionLocally(data.session_id, isNewSession ? raw : "", data.intent);
+    // response_language is the backend's own resolution — set on EVERY
+    // turn once a session has an active explicit or sticky override, null
+    // otherwise. This drives the "Replying in X" badge directly; the
+    // frontend doesn't need to separately track whether a prior turn set
+    // one, the server already did that bookkeeping (see
+    // services.audit_service.get_session_language_preference).
+    setStickyLanguage(data.response_language || null);
+
+    // A backend-resolved override already comes with its own translated
+    // text (or an honest failure notice) — pre-seeding `translations` with
+    // it here means displayText() never issues a redundant client-side
+    // /translate/ call for this message, and a language_notice renders via
+    // the exact same translateFailed path a client-side failure already
+    // uses, rather than a second, parallel notice mechanism.
+    const overrideLang = data.response_language;
+    const overrideTranslated = overrideLang && overrideLang !== "en" ? data.translated_answer : null;
+    // ChatGPT/Gemini-style per-message auto-match (changed 2026-07-23, on
+    // explicit request): the reply language always follows THIS message's
+    // own detected language — typed or voice, no difference — and is
+    // LOCKED onto the message permanently (m.replyLang below), never
+    // re-derived from whatever the shared sidebar/top-bar language toggle
+    // happens to be later. An explicit or sticky backend-resolved language
+    // still wins when present, since that's a deliberate user opt-in, not
+    // an accidental toggle leftover.
+    //
+    // resolveReplyLang: `detected`'s real-script signal wins when it has one
+    // (100% reliable); backend's input_language is only consulted for
+    // romanized/Latin-script input `detected` can't resolve on its own — see
+    // that function's docstring for why the priority is this way round.
+    const replyLang = resolveReplyLang(overrideLang, data.input_language, detected);
+    setMessages((prev) => {
+      if (!prev[assistantIndex]) return prev;
+      const copy = [...prev];
+      copy[assistantIndex] = {
+        role: "assistant", en: data.answer, citations: data.citations, sources: data.sources,
+        translations: overrideTranslated ? { [overrideLang]: overrideTranslated } : {},
+        replyLang,
+        intent: data.intent, latencyMs: data.latency_ms, providerUsed: data.provider_used || null,
+        fallbackReason: data.fallback_reason || null, rawFallback: Boolean(data.raw_fallback),
+        timestamp: new Date().toISOString(),
+        revealedChars: alreadyRevealed ? data.answer.length : 0, revealDone: alreadyRevealed, feedback: null,
+        translateFailed: Boolean(overrideLang && overrideLang !== "en" && !overrideTranslated && data.language_notice),
+        languageNotice: data.language_notice || null,
+        reasoningPath: data.reasoning_path || null, stage: null,
+      };
+      return copy;
+    });
+    if (!alreadyRevealed) startReveal(assistantIndex, data.answer);
+
+    // Deliberately does NOT call setLanguage(replyLang) here (a real bug,
+    // fixed 2026-08-29): UI chrome language (nav/buttons/labels) must only
+    // ever change via an explicit Settings choice — detecting Hindi/Kannada
+    // in a chat message and silently flipping the whole app's language was
+    // surprising and had nothing to do with what the user asked for. The
+    // reply's own language (replyLang, stored per-message below) still
+    // drives that one message bubble's rendering/translation/voice, same as
+    // before — only the global UI-language side effect is removed.
+
+    if (replyLang !== "en" && !overrideTranslated && !(overrideLang && data.language_notice)) {
+      const translated = await ensureAssistantTranslation(assistantIndex, data.answer, replyLang);
+      if (viaVoice && translated) handleSpeak(assistantIndex, translated, replyLang);
+    } else if (viaVoice) {
+      handleSpeak(assistantIndex, overrideTranslated || data.answer, overrideLang || replyLang);
+    }
+  }
+
+  // Consumes POST /chat/stream's SSE events, updating a live placeholder
+  // bubble at `assistantIndex` as they arrive, then finalizes via
+  // applyAssistantReply() once the "done" event lands. Throws on any
+  // failure (couldn't open the connection, stream ended without a "done",
+  // or an explicit "error" event) so the caller falls back to the
+  // non-streaming endpoint — never surfaces a stream-specific error to the
+  // user directly, per this feature's own requirement.
+  //
+  // Per this project's Option-1 translation decision: English tokens render
+  // live as they arrive (real streaming). A non-English target (known once
+  // the "composing" status event's response_language field arrives, or
+  // falling back to the same `detected` input-language used everywhere
+  // else) stays on the status indicator through composition — showing raw
+  // English tokens then swapping to a translation would flash the wrong
+  // language — and reveals the final translated text all at once via
+  // applyAssistantReply's existing (unchanged) translate-then-reveal path.
+  async function sendMessageStreaming(payload, { detected, isNewSession, viaVoice, assistantIndex, controller, raw }) {
+    let placeholderAdded = false;
+    let liveText = "";
+    let streamedLiveInEnglish = false;
+    let replyLangKnown = null;
+    let doneEvent = null;
+    let streamError = null;
+
+    function ensurePlaceholder(stageText) {
+      if (placeholderAdded) return;
+      placeholderAdded = true;
+      setMessages((prev) => [...prev, {
+        role: "assistant", en: "", citations: [], sources: null, translations: {}, replyLang: null,
+        intent: null, timestamp: new Date().toISOString(), revealedChars: 0, revealDone: false,
+        feedback: null, stage: stageText, reasoningPath: null,
+      }]);
+    }
+
+    try {
+      await api.postStream("/chat/stream", payload, token, {
+        signal: controller.signal,
+        onEvent(event) {
+          if (event.type === "status") {
+            ensurePlaceholder(event.text);
+            setMessages((prev) => {
+              if (!prev[assistantIndex]) return prev;
+              const copy = [...prev];
+              copy[assistantIndex] = { ...copy[assistantIndex], stage: event.text };
+              return copy;
+            });
+            // Both response_language and input_language arrive on the
+            // "composing" status event, before any token — known in time to
+            // decide whether to show English tokens live at all. Same
+            // resolveReplyLang priority as applyAssistantReply: `detected`'s
+            // real-script signal wins over the backend's (occasionally
+            // inconsistent) input_language when it has one.
+            if (event.response_language !== undefined) {
+              replyLangKnown = resolveReplyLang(event.response_language, event.input_language, detected);
+            }
+          } else if (event.type === "token") {
+            ensurePlaceholder(null);
+            const effectiveReplyLang = replyLangKnown || detected;
+            if (effectiveReplyLang === "en") {
+              streamedLiveInEnglish = true;
+              liveText += event.text;
+              setMessages((prev) => {
+                if (!prev[assistantIndex]) return prev;
+                const copy = [...prev];
+                copy[assistantIndex] = { ...copy[assistantIndex], en: liveText, revealedChars: liveText.length, revealDone: false, stage: null };
+                return copy;
+              });
+            }
+          } else if (event.type === "done") {
+            doneEvent = event;
+          } else if (event.type === "error") {
+            streamError = event.message;
+          }
+        },
+      });
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 0) {
+        const abortErr = new Error("Stopped");
+        abortErr.isAbort = true;
+        throw abortErr;
+      }
+      if (placeholderAdded) setMessages((prev) => prev.filter((_, i) => i !== assistantIndex));
+      throw err;
+    }
+
+    if (streamError || !doneEvent) {
+      if (placeholderAdded) setMessages((prev) => prev.filter((_, i) => i !== assistantIndex));
+      throw new Error(streamError || "Stream ended without a response");
+    }
+
+    await applyAssistantReply(doneEvent, { isNewSession, viaVoice, detected, assistantIndex, raw, alreadyRevealed: streamedLiveInEnglish });
+  }
+
   async function sendMessage(rawText, sourceLang, viaVoice) {
     const raw = rawText.trim();
     if (!raw || sending) return;
@@ -648,17 +859,6 @@ export default function Chat() {
       // (chat.py's _CRIME_NO_IN_TEXT) — no separate field needed on this end.
       const payload = { question: englishQuestion, session_id: sessionId || undefined };
 
-      const data = await api.post("/chat/message", payload, token, { signal: controller.signal });
-      setSessionId(data.session_id);
-      touchSessionLocally(data.session_id, isNewSession ? raw : "", data.intent);
-      // response_language is the backend's own resolution — set on EVERY
-      // turn once a session has an active explicit or sticky override, null
-      // otherwise. This drives the "Replying in X" badge directly; the
-      // frontend doesn't need to separately track whether a prior turn set
-      // one, the server already did that bookkeeping (see
-      // services.audit_service.get_session_language_preference).
-      setStickyLanguage(data.response_language || null);
-
       // `messages` here is the stale closure captured when sendMessage started —
       // deliberately so: it's the length *before* the user-message setMessages
       // call above took effect, so +1 correctly predicts the assistant message's
@@ -669,54 +869,16 @@ export default function Chat() {
       // dropped by updateMessage's `if (!prev[index]) return prev;` guard and
       // the bubble stayed on "Translating…" forever even after the request failed.
       const assistantIndex = messages.length + 1;
-      // A backend-resolved override already comes with its own translated
-      // text (or an honest failure notice) — pre-seeding `translations` with
-      // it here means displayText() never issues a redundant client-side
-      // /translate/ call for this message, and a language_notice renders via
-      // the exact same translateFailed path a client-side failure already
-      // uses, rather than a second, parallel notice mechanism.
-      const overrideLang = data.response_language;
-      const overrideTranslated = overrideLang && overrideLang !== "en" ? data.translated_answer : null;
-      // ChatGPT/Gemini-style per-message auto-match (changed 2026-07-23, on
-      // explicit request): the reply language always follows THIS message's
-      // own detected language — typed or voice, no difference — and is
-      // LOCKED onto the message permanently (m.replyLang below), never
-      // re-derived from whatever the shared sidebar/top-bar language toggle
-      // happens to be later. Previously this used the shared `language`
-      // state both to pick the reply language AND to render every bubble
-      // (displayText read the global toggle, not a per-message value) — so
-      // switching languages mid-conversation silently re-translated and
-      // re-displayed OLDER messages into the new language too, which is not
-      // what "answer in whichever language was asked" means. An explicit or
-      // sticky backend-resolved language (requirement 1's three-level
-      // priority — an explicit "answer in Hindi" instruction, or a session
-      // sticky override set by one) still wins when present, since that's a
-      // deliberate user opt-in, not an accidental toggle leftover.
-      const replyLang = overrideLang || detected;
-      setMessages((prev) => [...prev, {
-        role: "assistant", en: data.answer, citations: data.citations, sources: data.sources,
-        translations: overrideTranslated ? { [overrideLang]: overrideTranslated } : {},
-        replyLang,
-        intent: data.intent, latencyMs: data.latency_ms, providerUsed: data.provider_used || null,
-        fallbackReason: data.fallback_reason || null, rawFallback: Boolean(data.raw_fallback),
-        timestamp: new Date().toISOString(), revealedChars: 0, revealDone: false, feedback: null,
-        translateFailed: Boolean(overrideLang && overrideLang !== "en" && !overrideTranslated && data.language_notice),
-        languageNotice: data.language_notice || null,
-      }]);
-      startReveal(assistantIndex, data.answer);
 
-      // Still updates the shared toggle too (drives AppShell's UI-chrome
-      // translation and is what a NEW ambiguous/"mixed"-script message falls
-      // back to) — but this no longer forces older bubbles to re-render in
-      // it, since displayText() now prefers each message's own locked
-      // m.replyLang (see below) over this shared value.
-      if (replyLang !== language) setLanguage(replyLang);
-
-      if (replyLang !== "en" && !overrideTranslated && !(overrideLang && data.language_notice)) {
-        const translated = await ensureAssistantTranslation(assistantIndex, data.answer, replyLang);
-        if (viaVoice && translated) handleSpeak(assistantIndex, translated);
-      } else if (viaVoice) {
-        handleSpeak(assistantIndex, overrideTranslated || data.answer);
+      try {
+        await sendMessageStreaming(payload, { detected, isNewSession, viaVoice, assistantIndex, controller, raw });
+      } catch (streamErr) {
+        if (streamErr?.isAbort) return; // user-initiated stop — handled by the outer catch below
+        // Stream-level failure (connection couldn't open, dropped mid-way, or
+        // ended without a "done") — fall back to the non-streaming endpoint
+        // rather than showing an error, per this feature's requirement.
+        const data = await api.post("/chat/message", payload, token, { signal: controller.signal });
+        await applyAssistantReply(data, { isNewSession, viaVoice, detected, assistantIndex, raw });
       }
     } catch (err) {
       if (handleAuthExpiry(err)) return;
@@ -844,7 +1006,7 @@ export default function Chat() {
     }
   }
 
-  async function handleSpeak(index, text) {
+  async function handleSpeak(index, text, langCode) {
     if (speakingIndex === index) {
       audioPlayerRef.current?.pause();
       setSpeakingIndex(null);
@@ -853,7 +1015,12 @@ export default function Chat() {
     setVoiceError("");
     setSpeakingIndex(index);
     try {
-      const blob = await api.post("/voice/speak", { text, language_code: language }, token);
+      // Same fix as displayText()/the message-language bug above: the voice
+      // must match the actual text being spoken (this message's own
+      // replyLang), not the UI-chrome language — a Kannada reply read aloud
+      // while the UI happens to be in English must still use the Kannada
+      // voice, not fall back to en-IN.
+      const blob = await api.post("/voice/speak", { text, language_code: langCode || language }, token);
       const url = URL.createObjectURL(blob);
       const audio = new Audio(url);
       audioPlayerRef.current = audio;
@@ -915,7 +1082,21 @@ export default function Chat() {
   function displayText(m) {
     if (m.role === "user") return m.text;
     if (m.isError) return m.en;
-    const full = language === "en" ? m.en : (m.translations?.[language] || (m.translateFailed ? m.en : null));
+    // A REAL BUG FIXED 2026-08-29, found while fixing a related one: this
+    // used to key purely off the global UI-chrome `language` — which
+    // rendered every message correctly ONLY because a separate bug (now
+    // removed, see applyAssistantReply's own comment) used to force that
+    // global value to follow whatever language the LATEST message was
+    // detected in. Once that side effect was removed (UI language must
+    // only change via Settings), this fell back to the UI language alone
+    // and a Kannada/Hindi reply started rendering in English again whenever
+    // the UI itself was English. `m.replyLang` — the language actually
+    // locked onto THIS message at reply time — is the correct, permanent
+    // source of truth per message; the global `language` is only a
+    // fallback for the rare message with no locked value at all (e.g. an
+    // older message from before replyLang existed).
+    const effectiveLang = m.replyLang || language;
+    const full = effectiveLang === "en" ? m.en : (m.translations?.[effectiveLang] || (m.translateFailed ? m.en : null));
     if (full === null) {
       return (
         <span className="chat-translating">
@@ -928,10 +1109,10 @@ export default function Chat() {
     return (
       <span>
         {revealed}
-        {m.translateFailed && language !== "en" && (
+        {m.translateFailed && effectiveLang !== "en" && (
           <span className="chat-translate-note">
             {" "}
-            {m.languageNotice || `(${LANG_NAMES[language]} ${t("chat.translationUnavailable")})`}
+            {m.languageNotice || `(${LANG_NAMES[effectiveLang]} ${t("chat.translationUnavailable")})`}
           </span>
         )}
       </span>
@@ -1154,12 +1335,20 @@ export default function Chat() {
                     {m.role === "assistant" && !m.isError && m.rawFallback && (
                       <div className="chat-raw-fallback-banner">AI composition unavailable — showing raw data</div>
                     )}
-                    {displayText(m)}
-                    {m.role === "assistant" && !m.isError && (
+                    {m.role === "assistant" && m.stage ? (
+                      <span className="chat-stage-indicator">{m.stage}</span>
+                    ) : (
+                      displayText(m)
+                    )}
+                    {m.role === "assistant" && !m.isError && !m.stage && (
                       <button
                         type="button"
                         className={`chat-speak-btn ${speakingIndex === i ? "playing" : ""}`}
-                        onClick={() => handleSpeak(i, language !== "en" && m.translations?.[language] ? m.translations[language] : m.en)}
+                        onClick={() => {
+                          const speakLang = m.replyLang || language;
+                          const speakText = speakLang !== "en" && m.translations?.[speakLang] ? m.translations[speakLang] : m.en;
+                          handleSpeak(i, speakText, speakLang);
+                        }}
                         title={speakingIndex === i ? t("chat.stop") : t("chat.listen")}
                       >
                         <SpeakerIcon width={14} height={14} />
@@ -1168,6 +1357,7 @@ export default function Chat() {
                     {(m.citations?.length > 0 || m.sources?.length > 0) && (
                       <SourcesBlock citations={m.citations} sources={m.sources} navigate={navigate} t={t} />
                     )}
+                    {!m.stage && <ReasoningTraceBlock reasoningPath={m.reasoningPath} />}
                   </div>
                 )}
 
@@ -1242,7 +1432,12 @@ export default function Chat() {
               </div>
             </div>
           ))}
-          {sending && (
+          {/* Only shown before the streaming placeholder (or the non-streaming
+              fallback's eventual reply) has landed as its own message row —
+              once that row exists, its own live m.stage indicator (real,
+              backend-driven status text) replaces this generic guessed-intent
+              one, rather than showing both stacked on top of each other. */}
+          {sending && messages[messages.length - 1]?.role !== "assistant" && (
             <div className="chat-row chat-row-assistant">
               <div className="chat-avatar chat-avatar-bot"><ShieldIcon width={15} height={15} /></div>
               <div className="chat-bubble chat-typing-bubble">
@@ -1465,6 +1660,33 @@ function SourcesBlock({ citations, sources, navigate, t }) {
             >
               {crimeNo} →
             </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Persisted, collapsible explainability trace for a streamed reply — every
+// pipeline stage this turn genuinely went through (real data from the
+// backend's reasoning_path, see api/routers/chat.py's _stream_chat_response
+// — never a filler string), left under the finished message rather than
+// discarded once the transient loading indicator goes away.
+function ReasoningTraceBlock({ reasoningPath }) {
+  const [open, setOpen] = useState(false);
+  if (!reasoningPath || reasoningPath.length === 0) return null;
+  return (
+    <div className="chat-sources-block">
+      <button type="button" className="chat-sources-toggle" onClick={() => setOpen((v) => !v)}>
+        <ChevronDownIcon width={12} height={12} className={open ? "chat-chevron-open" : ""} />
+        Reasoning path ({reasoningPath.length} step{reasoningPath.length === 1 ? "" : "s"})
+      </button>
+      {open && (
+        <div className="chat-sources-detail">
+          {reasoningPath.map((step, i) => (
+            <div key={i} className="chat-source-row">
+              <span>🔹 {step.stage} — {step.detail} <em>({step.at_ms}ms)</em></span>
+            </div>
           ))}
         </div>
       )}

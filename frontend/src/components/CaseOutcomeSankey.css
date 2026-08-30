@@ -1,0 +1,57 @@
+.cos-wrap {
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.cos-svg {
+  width: 100%;
+  min-width: 780px;
+  height: auto;
+  display: block;
+}
+
+.cos-node {
+  stroke: var(--surface);
+  stroke-width: 1;
+}
+
+.cos-node-crime { fill: var(--accent); }
+.cos-node-status { fill: var(--gold); }
+.cos-node-outcome-ok { fill: var(--ok); }
+.cos-node-outcome-crit { fill: var(--crit); }
+.cos-node-outcome-muted { fill: var(--muted); }
+
+.cos-label {
+  font-size: 11.5px;
+  fill: var(--ink);
+  font-weight: 600;
+}
+
+.cos-label-top {
+  font-size: 10.5px;
+}
+
+.cos-label-count {
+  font-weight: 500;
+  fill: var(--muted);
+}
+
+.cos-link {
+  fill: var(--accent);
+  opacity: 0.28;
+  cursor: pointer;
+  transition: opacity 0.12s ease;
+}
+
+.cos-link-outcome-ok { fill: var(--ok); }
+.cos-link-outcome-crit { fill: var(--crit); }
+.cos-link-outcome-muted { fill: var(--muted); }
+
+.cos-link:hover,
+.cos-link-hover {
+  opacity: 0.55;
+}
+
+@media (max-width: 640px) {
+  .cos-svg { min-width: 700px; }
+}

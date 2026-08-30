@@ -4,7 +4,7 @@ import re
 
 from chat.zia_client import Budget
 from chat.llm_provider import complete_with_failover
-from chat.entity_extractor import get_known_crime_types, get_dataset_anchor_date, KNOWN_DISTRICTS, AGGREGATIONS
+from chat.entity_extractor import get_known_crime_types, get_known_case_statuses, get_dataset_anchor_date, KNOWN_DISTRICTS, AGGREGATIONS
 
 logger = logging.getLogger("ChatRouter")
 
@@ -47,7 +47,17 @@ _CLASSIFY_PROMPT = (
     "\"Tamil\", \"Telugu\", \"Bengali\", \"Marathi\", \"French\", \"Spanish\", \"Urdu\", etc.) — "
     "populate this for every message, independent of response_language above. This is what "
     "lets a question asked in any language get answered back in that same language, without "
-    "the user having to say so explicitly.\n\n"
+    "the user having to say so explicitly.\n"
+    "CRITICAL: a message can be Hindi or Kannada while being spelled entirely in Latin/Roman "
+    "letters (romanized/transliterated — no Devanagari or Kannada script at all), and this "
+    "counts as input_language=\"Hindi\"/\"Kannada\", NOT \"English\" — judge by the actual "
+    "words and grammar, not the script. This is common and must not be missed just because a "
+    "stray English loanword (a place name, \"live\", \"case\", \"status\", etc.) also appears "
+    "in the sentence — one embedded English word does not make the sentence English. Example: "
+    "\"Yava jilleyalli ati hechhu prakaranagalu live?\" is romanized Kannada (\"which district "
+    "has the most live cases?\") -> input_language=\"Kannada\", cleaned_message=\"Which "
+    "district has the most live cases?\" — even though it contains the English word \"live\" "
+    "and no Kannada script appears anywhere in it.\n\n"
     "cleaned_message must always be a clean, ENGLISH-language version of the question: if "
     "input_language is not English, translate the question to English; separately, if an "
     "explicit reply-language instruction phrase was found (see response_language above), also "
@@ -58,6 +68,21 @@ _CLASSIFY_PROMPT = (
     "Kolar? Answer in Kannada\" -> cleaned_message \"How many murder cases in Kolar?\"). When "
     "the message is already in English with no instruction phrase, cleaned_message is simply "
     "the original message, unchanged.\n\n"
+    "Separately, ALWAYS produce resolved_message: take cleaned_message and check whether it "
+    "only makes sense given the conversation above — a pronoun (\"he\", \"that case\"), a bare "
+    "follow-up (\"how old\", \"what about section 307\"), or anything else with no case/topic "
+    "of its own. If so, rewrite it as a single, fully standalone question that spells out "
+    "whatever it depends on (a name, a case number, a pronoun's referent) using ONLY the "
+    "conversation below, so it can be understood with no other context — then classify intent "
+    "and extract every field below FROM THIS RESOLVED, STANDALONE FORM, not from the original "
+    "wording (a resolved \"How old is Krishnamurthy Suvarna?\" is a CASE_LOOKUP about a named "
+    "person, not a FOLLOW_UP, even though the original message was just \"how old is he?\"). If "
+    "cleaned_message is already standalone (the ordinary case — most messages), resolved_message "
+    "is simply the same as cleaned_message, unchanged, and classification proceeds as normal. "
+    "Only classify intent as FOLLOW_UP if the message genuinely cannot be resolved this way even "
+    "with the conversation given below (e.g. it depends on something from further back than what's "
+    "shown, or is too ambiguous to resolve confidently) — this should be rare, a safety valve for "
+    "when resolution isn't possible here, not the default outcome for every follow-up-shaped message.\n\n"
     "Additionally, ALWAYS attempt to extract these statistics-query fields — whether or not "
     "the message actually turns out to be an AGGREGATE_QUERY (a caller ignores them entirely "
     "for any other intent, so there's no harm in always trying; this saves a second, separate "
@@ -76,12 +101,27 @@ _CLASSIFY_PROMPT = (
     "genuinely open-ended/ongoing phrase like \"so far this year\" or \"up to now\".\n\n"
     "Known crime types in this dataset (normalize crime_type to exactly one of these, or "
     "null if the question doesn't name a crime type, or the exact string the question used "
-    "if it names something NOT in this list — never invent a new label of your own):\n"
+    "if it names something NOT in this list — never invent a new label of your own). "
+    "IMPORTANT: a word describing what STAGE a case is at (closed, charge sheeted, "
+    "chargesheeted, under investigation, ongoing, open, pending) is a case_status, NEVER a "
+    "crime_type, even when it's the only descriptive word in the question and no real crime "
+    "type is named at all — set crime_type to null in that case and put the status word in "
+    "case_status instead (see below). \"How many closed cases\" has crime_type=null, "
+    "case_status=\"Closed\" — it must NOT produce crime_type=\"closed\" or any other guess:\n"
     "{crime_types}\n\n"
     "Known districts in this dataset (normalize district to exactly one of these, or null "
     "if none is mentioned, or the exact string used if it names something not in this "
     "list):\n"
     "{districts}\n\n"
+    "Known case statuses in this dataset (normalize case_status to exactly one of these, or "
+    "null if the question doesn't name a case status, or the exact string the question used "
+    "if it names something NOT in this list — never invent a new label of your own; \"charge "
+    "sheeted\"/\"chargesheeted\"/\"charge-sheeted\" all normalize to the same known status "
+    "regardless of spacing/hyphenation, and \"under investigation\"/\"ongoing\"/\"open\" all "
+    "mean the same status too). A status word is a case_status even standing alone with no "
+    "other crime-type/district word in the question (\"how many charge sheeted cases\" -> "
+    "crime_type=null, case_status=\"Charge Sheeted\"):\n"
+    "{case_statuses}\n\n"
     "When choosing `aggregation`, a question that asks WHICH district/month/category has the "
     "most or least of something (\"which district has the most murder cases\", \"which month "
     "had the fewest thefts\") needs the BREAKDOWN itself, not a single overall number — use "
@@ -114,8 +154,9 @@ _CLASSIFY_PROMPT = (
     "exactly this shape (use null for any entity field not present/not applicable):\n"
     '{{"intent": "<ONE_OF_THE_FIVE_LABELS_ABOVE>", "confidence": <float between 0 and 1>, '
     '"response_language": <"en"|"hi"|"kn"|null>, "input_language": "<language name>", '
-    '"cleaned_message": "<string>", '
+    '"cleaned_message": "<string>", "resolved_message": "<string>", '
     '"crime_type": <string or null>, "district": <string or null>, "district_2": <string or null>, '
+    '"case_status": <string or null>, '
     '"date_from": <"YYYY-MM-DD" or null>, "date_to": <"YYYY-MM-DD" or null>, '
     '"accused_name": <string or null>, "victim_gender": <"Male"|"Female"|"Transgender" or null>, '
     '"aggregation": <one of "count","list","group_by_district","group_by_month","trend",'
@@ -129,6 +170,63 @@ _REWRITE_PROMPT = (
     "Rewrite it as a single, fully standalone question that spells out whatever it depends "
     "on (a name, a case, a pronoun's referent) so it can be understood with no other "
     "context. Reply with ONLY the rewritten question, nothing else."
+)
+
+# Combines rewrite_follow_up + the reclassification call that used to follow it
+# (api/routers/chat.py's FOLLOW_UP branch: rewrite, THEN a full second
+# classify_intent call on the rewritten text) into one call — live-measured
+# this pair as the single biggest reason a follow-up (19.6s) took ~2.8x longer
+# than a fresh question (6.9s): a follow-up paid for 4 sequential LLM calls
+# (classify original -> rewrite -> reclassify rewritten -> compose answer)
+# where a fresh question only pays for 2 (classify -> compose). Re-uses
+# _CLASSIFY_PROMPT's exact category/entity instructions verbatim (only the
+# task framing around it changes) specifically so this doesn't risk any of
+# that prompt's already-live-tested phrasing.
+_REWRITE_AND_CLASSIFY_PROMPT = (
+    "Conversation so far (oldest first):\n{history}\n\n"
+    "The user's latest message is a follow-up that only makes sense given the conversation "
+    'above: "{message}"\n\n'
+    "First, rewrite it as a single, fully standalone question that spells out whatever it "
+    "depends on (a name, a case, a pronoun's referent) so it can be understood with no other "
+    "context.\n\n"
+    "Then classify THAT REWRITTEN standalone question into exactly one of these five "
+    "categories:\n"
+    "- LEGAL_REFERENCE: a general question about IPC/BNS law, sections, legal definitions, "
+    "or procedure — not about a specific real case.\n"
+    "- CASE_LOOKUP: asks about a specific FIR/case/accused/victim, usually containing or "
+    "referring to a crime number.\n"
+    "- AGGREGATE_QUERY: asks for a count, total, trend, or statistic across many cases "
+    "(e.g. \"how many murder cases this year\", \"average theft amount\").\n"
+    "- FOLLOW_UP: the rewritten question STILL only makes sense given further conversation "
+    "context beyond what's given above (rare, since the rewrite step should have already "
+    "resolved it — only use this if the rewrite genuinely could not).\n"
+    "- OUT_OF_SCOPE: unrelated to Karnataka policing, crime data, or law.\n\n"
+    "Also ALWAYS attempt to extract these statistics-query fields from the rewritten question "
+    "— whether or not it turns out to be an AGGREGATE_QUERY (a caller ignores them for any "
+    "other intent):\n"
+    "The dataset's most recent record date is {anchor_date} — treat this as \"today\" when "
+    "resolving any relative date phrase. This is a historical dataset, NOT live data.\n"
+    "Known crime types in this dataset (normalize crime_type to exactly one of these, or "
+    "null if none is named, or the exact string used if it names something not in this "
+    "list). IMPORTANT: a word describing what STAGE a case is at (closed, charge sheeted, "
+    "chargesheeted, under investigation, ongoing, open, pending) is a case_status, NEVER a "
+    "crime_type, even standing alone with no real crime type named — set crime_type to null "
+    "and put the status word in case_status instead (\"how many closed cases\" -> "
+    "crime_type=null, case_status=\"Closed\"):\n{crime_types}\n\n"
+    "Known districts in this dataset (same normalization rule):\n{districts}\n\n"
+    "Known case statuses in this dataset (normalize case_status to exactly one of these, or "
+    "null if none is named — \"charge sheeted\"/\"chargesheeted\" and \"under investigation\"/"
+    "\"ongoing\"/\"open\" each normalize to the same known status):\n{case_statuses}\n\n"
+    "Reply with ONLY a single-line JSON object, no other text, no markdown code fence, in "
+    "exactly this shape (use null for any entity field not present/not applicable):\n"
+    '{{"rewritten_question": "<string>", "intent": "<ONE_OF_THE_FIVE_LABELS_ABOVE>", '
+    '"confidence": <float between 0 and 1>, '
+    '"crime_type": <string or null>, "district": <string or null>, "district_2": <string or null>, '
+    '"case_status": <string or null>, '
+    '"date_from": <"YYYY-MM-DD" or null>, "date_to": <"YYYY-MM-DD" or null>, '
+    '"accused_name": <string or null>, "victim_gender": <"Male"|"Female"|"Transgender" or null>, '
+    '"aggregation": <one of "count","list","group_by_district","group_by_month","trend",'
+    '"group_by_section","avg_days_to_arrest", or null>}}'
 )
 
 _JSON_OBJECT_RE = re.compile(r"\{.*\}", re.DOTALL)
@@ -149,7 +247,8 @@ def _clean_entity(value):
 
 
 _EMPTY_ENTITIES = {
-    "crime_type": None, "district": None, "district_2": None, "date_from": None, "date_to": None,
+    "crime_type": None, "district": None, "district_2": None, "case_status": None,
+    "date_from": None, "date_to": None,
     "accused_name": None, "victim_gender": None, "aggregation": None,
 }
 
@@ -197,6 +296,7 @@ def classify_intent(message: str, recent_history: list[dict] | None = None, budg
         anchor_date=get_dataset_anchor_date(),
         crime_types=", ".join(get_known_crime_types()) or "(none on record)",
         districts=", ".join(KNOWN_DISTRICTS),
+        case_statuses=", ".join(get_known_case_statuses()) or "(none on record)",
         history=_format_recent_history(recent_history),
         message=message,
     )
@@ -204,7 +304,7 @@ def classify_intent(message: str, recent_history: list[dict] | None = None, budg
         raw, provider_used, _reason, _latency_ms = complete_with_failover("classification", prompt, 0, budget=budget, json_mode=True)
     except Exception as e:
         logger.warning(f"Intent classification call failed, defaulting to legacy path: {e}")
-        return {"intent": None, "confidence": 0.0, "response_language": None, "input_language": None, "cleaned_message": message, "provider": None, **_EMPTY_ENTITIES}
+        return {"intent": None, "confidence": 0.0, "response_language": None, "input_language": None, "cleaned_message": message, "resolved_message": message, "provider": None, **_EMPTY_ENTITIES}
 
     match = _JSON_OBJECT_RE.search(raw)
     candidate = match.group(0) if match else raw
@@ -214,11 +314,11 @@ def classify_intent(message: str, recent_history: list[dict] | None = None, budg
         confidence = float(parsed.get("confidence"))
     except (json.JSONDecodeError, TypeError, ValueError) as e:
         logger.warning(f"Intent classifier returned unparseable JSON ({e!r}): {raw!r}")
-        return {"intent": None, "confidence": 0.0, "response_language": None, "input_language": None, "cleaned_message": message, "provider": provider_used, **_EMPTY_ENTITIES}
+        return {"intent": None, "confidence": 0.0, "response_language": None, "input_language": None, "cleaned_message": message, "resolved_message": message, "provider": provider_used, **_EMPTY_ENTITIES}
 
     if intent not in INTENTS or not (0.0 <= confidence <= 1.0):
         logger.warning(f"Intent classifier returned an out-of-contract result: {parsed!r}")
-        return {"intent": None, "confidence": 0.0, "response_language": None, "input_language": None, "cleaned_message": message, "provider": provider_used, **_EMPTY_ENTITIES}
+        return {"intent": None, "confidence": 0.0, "response_language": None, "input_language": None, "cleaned_message": message, "resolved_message": message, "provider": provider_used, **_EMPTY_ENTITIES}
 
     response_language = parsed.get("response_language")
     if response_language not in ("en", "hi", "kn"):
@@ -232,6 +332,15 @@ def classify_intent(message: str, recent_history: list[dict] | None = None, budg
     if not isinstance(cleaned_message, str) or not cleaned_message.strip():
         cleaned_message = message
 
+    # Follow-up resolution folded into this same call (added 2026-08-22) —
+    # see _CLASSIFY_PROMPT's "resolved_message" paragraph. Falls back to
+    # cleaned_message (not the raw message) on a missing/empty value, same
+    # as this prompt's other optional-but-expected fields degrading
+    # independently rather than failing the whole classification.
+    resolved_message = parsed.get("resolved_message")
+    if not isinstance(resolved_message, str) or not resolved_message.strip():
+        resolved_message = cleaned_message
+
     aggregation = parsed.get("aggregation")
     if aggregation not in AGGREGATIONS:
         aggregation = None
@@ -242,10 +351,86 @@ def classify_intent(message: str, recent_history: list[dict] | None = None, budg
         "response_language": response_language,
         "input_language": input_language,
         "cleaned_message": cleaned_message,
+        "resolved_message": resolved_message,
         "provider": provider_used,
         "crime_type": _clean_entity(parsed.get("crime_type")),
         "district": _clean_entity(parsed.get("district")),
         "district_2": _clean_entity(parsed.get("district_2")),
+        "case_status": _clean_entity(parsed.get("case_status")),
+        "date_from": _clean_entity(parsed.get("date_from")),
+        "date_to": _clean_entity(parsed.get("date_to")),
+        "accused_name": _clean_entity(parsed.get("accused_name")),
+        "victim_gender": _clean_entity(parsed.get("victim_gender")),
+        "aggregation": aggregation,
+    }
+
+
+def rewrite_and_classify_follow_up(message: str, history_str: str, budget: Budget | None = None) -> dict:
+    """Replaces the old rewrite_follow_up() + a second classify_intent() call
+    with one combined call (see _REWRITE_AND_CLASSIFY_PROMPT's docstring for
+    why). Returns a dict with the same shape classify_intent() returns, plus
+    "rewritten_question" — response_language/input_language are always None
+    (the original message's own classification already captured those; a
+    follow-up's rewritten form has nothing new to detect there, same
+    reasoning api/routers/chat.py already documented for the old two-call
+    version). Falls back to (message unchanged, intent=None) — the same
+    "couldn't resolve, use the legacy grounded-RAG fallback" contract
+    classify_intent() already uses on any failure — rather than raising."""
+    fallback = {
+        "rewritten_question": message, "intent": None, "confidence": 0.0,
+        "response_language": None, "input_language": None, "cleaned_message": message,
+        "provider": None, **_EMPTY_ENTITIES,
+    }
+    if not history_str:
+        return fallback
+    prompt = _REWRITE_AND_CLASSIFY_PROMPT.format(
+        history=history_str,
+        message=message,
+        anchor_date=get_dataset_anchor_date(),
+        crime_types=", ".join(get_known_crime_types()) or "(none on record)",
+        districts=", ".join(KNOWN_DISTRICTS),
+        case_statuses=", ".join(get_known_case_statuses()) or "(none on record)",
+    )
+    try:
+        raw, provider_used, _reason, _latency_ms = complete_with_failover("classification", prompt, 0, budget=budget, json_mode=True)
+    except Exception as e:
+        logger.warning(f"Combined rewrite+classify call failed, falling back to original message: {e}")
+        return fallback
+
+    match = _JSON_OBJECT_RE.search(raw)
+    candidate = match.group(0) if match else raw
+    try:
+        parsed = json.loads(candidate)
+        intent = parsed.get("intent")
+        confidence = float(parsed.get("confidence"))
+    except (json.JSONDecodeError, TypeError, ValueError) as e:
+        logger.warning(f"Combined rewrite+classify returned unparseable JSON ({e!r}): {raw!r}")
+        return fallback
+
+    rewritten = parsed.get("rewritten_question")
+    if not isinstance(rewritten, str) or not rewritten.strip():
+        rewritten = message
+
+    if intent not in INTENTS or not (0.0 <= confidence <= 1.0):
+        logger.warning(f"Combined rewrite+classify returned an out-of-contract intent: {parsed!r}")
+        intent, confidence = None, 0.0
+
+    aggregation = parsed.get("aggregation")
+    if aggregation not in AGGREGATIONS:
+        aggregation = None
+
+    return {
+        "rewritten_question": rewritten,
+        "intent": intent,
+        "confidence": confidence,
+        "response_language": None,
+        "input_language": None,
+        "cleaned_message": rewritten,
+        "provider": provider_used,
+        "crime_type": _clean_entity(parsed.get("crime_type")),
+        "district": _clean_entity(parsed.get("district")),
+        "district_2": _clean_entity(parsed.get("district_2")),
+        "case_status": _clean_entity(parsed.get("case_status")),
         "date_from": _clean_entity(parsed.get("date_from")),
         "date_to": _clean_entity(parsed.get("date_to")),
         "accused_name": _clean_entity(parsed.get("accused_name")),

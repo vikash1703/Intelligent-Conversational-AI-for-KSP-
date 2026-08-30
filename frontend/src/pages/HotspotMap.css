@@ -66,6 +66,29 @@
   color: #fff;
 }
 
+/* REAL BUG FIXED 2026-08-24: adding the 4th "Forecast" toggle button pushed
+   this row past 390px width (live-verified: body.scrollWidth went from a
+   clean 390 to 476) — the header itself never wrapped, and 4 buttons with
+   labels like "Population-weighted view" can't all fit on one line at phone
+   width regardless. Wraps the header onto two rows and lets the toggle
+   group scroll horizontally within its own row (same overflow-x affordance
+   AppShell.css's .shell-nav already uses for the same "too many nav items
+   for the width" problem) rather than trying to shrink button text
+   unreadably. */
+@media (max-width: 640px) {
+  .map-header {
+    flex-wrap: wrap;
+  }
+  .map-toggle {
+    margin-left: 0;
+    width: 100%;
+    overflow-x: auto;
+  }
+  .map-toggle button {
+    flex-shrink: 0;
+  }
+}
+
 .map-synthetic-note {
   flex: none;
   margin: 0;
@@ -153,6 +176,31 @@
   border-radius: 6px;
   padding: 4px 7px;
   font-size: 11.5px;
+}
+
+.map-horizon-toggle {
+  display: flex;
+  gap: 3px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.map-horizon-toggle button {
+  border: none;
+  background: none;
+  padding: 5px 11px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 650;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.map-horizon-toggle button.active {
+  background: var(--accent-fill);
+  color: #fff;
 }
 
 .map-district-toggle {

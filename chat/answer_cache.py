@@ -65,23 +65,37 @@ def _save() -> None:
 
 
 def get_cached_answer(question: str) -> dict | None:
-    """Returns {"answer": str, "citations": list, "intent": str} on a live
-    (not-yet-expired) hit, else None. Never raises — a corrupt/missing cache
-    file just means every question falls through to the real pipeline, same
-    as a cold cache."""
+    """Returns {"answer": str, "citations": list, "intent": str,
+    "input_language": str | None} on a live (not-yet-expired) hit, else None.
+    Never raises — a corrupt/missing cache file just means every question
+    falls through to the real pipeline, same as a cold cache.
+
+    input_language added 2026-08-29 (real bug fix): this cache isn't scoped
+    to legal-KB questions only — api/routers/chat.py checks it for EVERY
+    question, so a repeated aggregate/case question asked in Hindi/Kannada
+    was hitting the cache on its second ask and silently losing its detected
+    language entirely (the cache-hit response never carried input_language
+    at all), making the chat answer back in English even though the exact
+    same question had correctly triggered a Kannada/Hindi reply moments
+    earlier. .get() with a None default so pre-existing cache file entries
+    (persisted before this field existed) degrade to "unknown", not a
+    KeyError."""
     _load()
     entry = _cache.get(normalize_question(question))
     if entry is None:
         return None
     if time.time() - entry["cached_at"] > _TTL_SECONDS:
         return None
-    return {"answer": entry["answer"], "citations": entry["citations"], "intent": entry["intent"]}
+    return {
+        "answer": entry["answer"], "citations": entry["citations"], "intent": entry["intent"],
+        "input_language": entry.get("input_language"),
+    }
 
 
-def set_cached_answer(question: str, answer: str, citations: list, intent: str, persist: bool = True) -> None:
+def set_cached_answer(question: str, answer: str, citations: list, intent: str, input_language: str | None = None, persist: bool = True) -> None:
     _load()
     _cache[normalize_question(question)] = {
-        "answer": answer, "citations": citations, "intent": intent, "cached_at": time.time(),
+        "answer": answer, "citations": citations, "intent": intent, "input_language": input_language, "cached_at": time.time(),
     }
     if persist:
         _save()

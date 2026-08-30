@@ -200,6 +200,28 @@
   font-style: italic;
 }
 
+.chat-stage-indicator {
+  color: var(--muted);
+  font-style: italic;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chat-stage-indicator::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: chat-stage-pulse 1s ease-in-out infinite;
+}
+
+@keyframes chat-stage-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
 .chat-translating-slow {
   color: var(--warn);
   font-size: 12px;

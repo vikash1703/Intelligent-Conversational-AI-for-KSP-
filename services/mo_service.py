@@ -2,7 +2,7 @@ import logging
 import math
 from datetime import datetime
 
-from core.catalyst_client import execute_zcql, zcql_escape
+from core.catalyst_client import execute_zcql, zcql_escape, fetch_all_rows
 from services.analytics_service import extract_crime_type
 
 logger = logging.getLogger("MOService")
@@ -17,7 +17,14 @@ logger = logging.getLogger("MOService")
 # itself; what this module adds beyond that is temporal clustering (does the same
 # crime_type repeat in a tight time+distance window, suggesting a spree/series),
 # which similarity_service's case-similarity search doesn't consider at all.
-_CANDIDATE_LIMIT = 300  # ZCQL's hard per-query LIMIT ceiling
+_CANDIDATE_PAGE_SIZE = 300  # ZCQL's hard per-query LIMIT ceiling
+# REAL BUG FIXED 2026-08-23 (codebase-wide pagination audit): this used to be a
+# single LIMIT 300 query — meaning series/spree detection only ever considered
+# an arbitrary first-300-in-ZCQL-order subset of a crime type's real ~700-800
+# cases, silently missing genuine clustered matches beyond that. Fixed by
+# paginating through every same-crime_type candidate, same as
+# similarity_service.find_similar_cases' identical fix.
+_CANDIDATE_MAX_PAGES = 10
 _SERIES_DAY_WINDOW = 30      # cases within this many days of each other read as a spree
 _SERIES_DISTANCE_KM = 15     # ...and within this radius
 _SERIES_MIN_MATCHES = 3      # this many clustered matches before calling it a "Possible Series"
@@ -48,17 +55,18 @@ def analyze_mo(crime_no: str) -> dict | None:
     target_date = target.get("CrimeRegisteredDate")
     target_lat, target_lon = target.get("latitude"), target.get("longitude")
 
-    candidate_rows = execute_zcql(
-        "SELECT CaseMaster.CrimeNo, CaseMaster.CrimeRegisteredDate, "
-        "CaseMaster.latitude, CaseMaster.longitude "
-        f"FROM CaseMaster WHERE CaseMaster.BriefFacts = '{zcql_escape(target.get('BriefFacts', ''))}' "
-        f"AND CaseMaster.CrimeNo != '{safe_crime_no}' LIMIT {_CANDIDATE_LIMIT}"
+    # Every candidate, not just the first 300 (see _CANDIDATE_MAX_PAGES
+    # comment above for the live-reproduced ZCQL finding this guards
+    # against).
+    candidates = fetch_all_rows(
+        "CaseMaster", ["CrimeNo", "CrimeRegisteredDate", "latitude", "longitude"],
+        f" WHERE CaseMaster.BriefFacts = '{zcql_escape(target.get('BriefFacts', ''))}' "
+        f"AND CaseMaster.CrimeNo != '{safe_crime_no}'",
+        page_size=_CANDIDATE_PAGE_SIZE, max_pages=_CANDIDATE_MAX_PAGES,
     )
 
     matches = []
-    for r in candidate_rows:
-        row = r.get("CaseMaster", r)
-
+    for row in candidates:
         distance = None
         if row.get("latitude") is not None and target_lat is not None:
             distance = round(_distance_km(float(target_lat), float(target_lon), float(row["latitude"]), float(row["longitude"])), 1)

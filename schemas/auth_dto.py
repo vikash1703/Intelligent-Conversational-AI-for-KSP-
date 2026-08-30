@@ -38,3 +38,29 @@ class CurrentUser(BaseModel):
     # assigned one — both degrade to "can't scope this user's data by
     # district", not a login failure.
     home_district: Optional[str] = None
+    # Which specific police station (Unit.ROWID, as a string — same
+    # ROWID-not-business-key convention as every other FK-shaped reference in
+    # this codebase) this officer is home-assigned to (AppUser.HomeStationID,
+    # added 2026-08-23). Only meaningful for a Station-level role (Inspector);
+    # when set, services/permission_service.get_scoped_station_ids() uses this
+    # for TRUE single-station scoping instead of approximating to the whole
+    # home_district. None degrades to that district-wide approximation, same
+    # non-fatal pattern as home_district itself.
+    home_station_id: Optional[str] = None
+    # The resolved display name for home_station_id (Unit.UnitName), and this
+    # role's RolePermission.district_access ("ALL"/"Zone"/"District"/
+    # "Station") — both added 2026-08-23 alongside scope_label below, so the
+    # UI header can compose a LOCALIZED jurisdiction label itself (the fixed
+    # English phrasing in scope_label can't go through the i18n dict as-is)
+    # while the actual scoping DECISION still only ever happens once,
+    # server-side (services/permission_service.get_scoped_station_ids) — the
+    # frontend only ever picks which language's words to wrap around these
+    # real facts, never re-derives access from scratch.
+    home_station_name: Optional[str] = None
+    access_level: Optional[str] = None
+    # English-only fallback label ("Bengaluru Urban — Koramangala PS",
+    # "State — All Districts", "Jurisdiction not configured") — computed once
+    # at login by services/permission_service.describe_scope, for any
+    # consumer that just wants a ready string (Swagger, a non-UI API
+    # client) rather than composing its own from the fields above.
+    scope_label: Optional[str] = None

@@ -116,6 +116,7 @@
 .tone-ok { background: var(--ok-bg); color: var(--ok); }
 .tone-crit { background: var(--crit-bg); color: var(--crit); }
 .tone-muted { background: var(--surface-2); color: var(--muted); }
+.tone-gold { background: var(--gold-soft); color: var(--gold); }
 
 .home-soon {
   position: absolute;

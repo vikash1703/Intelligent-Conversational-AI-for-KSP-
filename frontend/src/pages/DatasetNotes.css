@@ -1,0 +1,198 @@
+.dn-page {
+  height: 100%;
+  overflow-y: auto;
+  padding: 20px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.dn-page h2 {
+  font-size: 15px;
+  margin: 0 0 4px;
+  color: var(--ink);
+}
+
+.dn-lede {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin: 0 0 14px;
+}
+
+.dn-frame {
+  font-size: 12.5px;
+  color: var(--ink);
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 0 0 24px;
+  line-height: 1.5;
+}
+
+.dn-section {
+  margin-bottom: 28px;
+}
+
+.dn-section h3 {
+  font-size: 13.5px;
+  color: var(--ink);
+  margin: 0 0 8px;
+}
+
+.dn-subheading {
+  font-size: 12.5px;
+  color: var(--ink);
+  margin: 16px 0 8px;
+}
+
+.dn-section-intro {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0 0 10px;
+  line-height: 1.5;
+}
+
+.dn-section-footnote {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin: 8px 0 0;
+  line-height: 1.5;
+}
+
+/* ---------- Overview stats ---------- */
+.dn-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+}
+
+.dn-overview-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.dn-overview-value {
+  font-family: var(--font-mono);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.dn-overview-label {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .02em;
+}
+
+/* ---------- Tables ---------- */
+.dn-table-wrap {
+  overflow-x: auto;
+}
+
+.dn-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.dn-table th {
+  text-align: left;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  color: var(--muted);
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.dn-table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  vertical-align: top;
+}
+
+.dn-mono {
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+
+.dn-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  padding: 3px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.dn-badge-real { color: var(--ok); background: var(--ok-bg); }
+.dn-badge-simulated { color: var(--warn); background: var(--warn-bg); }
+.dn-badge-missing { color: var(--crit); background: var(--crit-bg); }
+
+/* ---------- Data quality link + moved notes ---------- */
+.dn-link-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 12px 14px;
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--accent);
+  cursor: pointer;
+  margin-bottom: 12px;
+}
+
+.dn-link-card:hover { border-color: var(--accent); }
+
+.dn-notes-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dn-notes-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+.dn-notes-badge {
+  flex: none;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--ok-bg);
+  color: var(--ok);
+  margin-top: 2px;
+}
+
+.dn-notes-badge-info {
+  background: var(--info-bg);
+  color: var(--info);
+}
+
+@media (max-width: 640px) {
+  .dn-overview-grid { grid-template-columns: repeat(2, 1fr); }
+}

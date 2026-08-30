@@ -15,7 +15,7 @@ have been registered?" (caught by _HOW_MANY_RE).
 """
 import re
 
-from chat.entity_extractor import KNOWN_DISTRICTS
+from chat.entity_extractor import KNOWN_DISTRICTS, get_known_case_statuses
 
 # CrimeNo's real format is 18 digits (1-digit category + 4-digit district +
 # 4-digit station + 4-digit year + 5-digit serial, per the ER diagram) — a
@@ -42,9 +42,16 @@ _LANG_OVERRIDE_RE = re.compile(
 _LANG_NAME_TO_CODE = {"english": "en", "hindi": "hi", "kannada": "kn"}
 
 EMPTY_ENTITIES = {
-    "crime_type": None, "district": None, "district_2": None, "date_from": None, "date_to": None,
+    "crime_type": None, "district": None, "district_2": None, "case_status": None,
+    "date_from": None, "date_to": None,
     "accused_name": None, "victim_gender": None, "aggregation": None,
 }
+
+
+def _normalize_status_word(s: str) -> str:
+    """Strips spaces/hyphens and lowercases, so "charge sheeted"/"charge-
+    sheeted"/"chargesheeted" all compare equal to the same known status."""
+    return re.sub(r"[\s-]+", "", s).lower()
 
 
 def detect_language_override(message: str) -> tuple[str | None, str]:
@@ -77,6 +84,12 @@ def _result(intent: str, lang_code: str | None, cleaned_message: str) -> dict:
         # same as any other classification-unavailable case.
         "input_language": None,
         "cleaned_message": cleaned_message,
+        # Fast-path only ever matches unambiguous, inherently standalone
+        # shapes (a crime number, a section number) — never FOLLOW_UP — so
+        # there's nothing to resolve; same value as cleaned_message, for the
+        # same reason chat/router.py's classify_intent() does this on its
+        # own no-resolution-needed path.
+        "resolved_message": cleaned_message,
         # No LLM call at all was involved — "regex" rather than "zia"/"groq"
         # keeps this honest in the provider-transparency UI/response field
         # (see ChatResponse.provider_used) instead of implying either LLM
@@ -124,9 +137,29 @@ def fast_path_classification(message: str) -> dict | None:
         # which already extracts district correctly (confirmed via direct
         # A/B test), for this one narrower, less time-critical case.
         if not any(d.lower() in cleaned.lower() for d in KNOWN_DISTRICTS):
+            # REAL BUG FIXED 2026-08-24: the captured group was blindly
+            # assigned to crime_type, with no check for whether it was
+            # actually a case-status word instead — "how many closed cases"
+            # silently set crime_type="closed", failed the crime_type
+            # whitelist, and answered with a confusing crime-type
+            # clarification instead of a real, status-filtered count (or,
+            # worse, a wrong unfiltered total, depending on the caller's own
+            # fallback). Every "how many closed/charge sheeted/under
+            # investigation cases" phrasing takes THIS fast path (no known
+            # district name in it), so this wasn't a rare edge case — it was
+            # the exact literal phrasing of the bug this fix targets.
+            captured = how_many.group(1).strip()
+            normalized_captured = _normalize_status_word(captured)
+            matched_status = next(
+                (s for s in get_known_case_statuses() if _normalize_status_word(s) == normalized_captured),
+                None,
+            )
             result = _result("AGGREGATE_QUERY", lang_code, cleaned)
-            result["crime_type"] = how_many.group(1).strip()
             result["aggregation"] = "count"
+            if matched_status:
+                result["case_status"] = matched_status
+            else:
+                result["crime_type"] = captured
             return result
 
     return None

@@ -38,6 +38,17 @@ class ChatResponse(BaseModel):
     response_language: Optional[str] = None
     translated_answer: Optional[str] = None
     language_notice: Optional[str] = None
+    # The backend classifier's own detection of what language the question
+    # was actually WRITTEN in (chat/router.py's classify_intent) — any
+    # language, by its common English name (e.g. "Hindi", "Kannada",
+    # "French"), regardless of script (a romanized/Latin-script Hindi
+    # question still detects as "Hindi"). Added 2026-08-22 so the frontend
+    # can pick the reply language from the backend's real language-model
+    # detection instead of guessing from Unicode script alone — Latin-script
+    # ("Kolar mein kitne cases hue?") input was previously mis-detected as
+    # English client-side and answered without translation, even though the
+    # backend correctly recognized it as Hindi all along.
+    input_language: Optional[str] = None
     # True only when chat/zia_client.is_degraded() found Zia's rolling recent
     # latency/failure-rate unhealthy at the START of this turn — the
     # frontend uses this to show a subtle "AI service is responding slowly"

@@ -1,96 +1,408 @@
-.profile-page {
+.settings-page {
   height: 100%;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 40px 20px;
+  overflow-y: auto;
+  padding: 20px;
+  max-width: 880px;
+  margin: 0 auto;
 }
 
-.profile-card {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  padding: 32px;
-  text-align: center;
-  width: 100%;
-  max-width: 320px;
-}
-
-.profile-avatar {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: var(--accent-soft);
-  color: var(--accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 14px;
-}
-
-.profile-name {
+.settings-page h2 {
+  font-size: 15px;
   margin: 0 0 4px;
-  font-size: 16px;
-  font-weight: 700;
   color: var(--ink);
 }
 
-.profile-role {
+.settings-lede {
+  font-size: 12.5px;
+  color: var(--muted);
   margin: 0 0 20px;
+  max-width: 62ch;
+}
+
+.settings-identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.settings-identity-text { min-width: 0; }
+
+.settings-avatar-upload {
+  position: relative;
+  flex: none;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.settings-avatar-upload:hover .ksp-avatar { filter: brightness(0.92); }
+
+.settings-avatar-edit-badge {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent-fill);
+  color: #fff;
+  border: 2px solid var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Visually hidden, not display:none — an input that's never actually
+   rendered on screen still needs to exist in the DOM for its own change
+   event and the .click() call the upload button triggers to work at all. */
+.settings-avatar-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.settings-avatar-error {
   font-size: 11.5px;
+  color: var(--crit);
+  margin: 6px 0 0;
+  max-width: 40ch;
+  overflow-wrap: break-word;
+}
+
+.settings-name {
+  margin: 0 0 4px;
+  font-size: 17px;
+  font-weight: 750;
+  color: var(--ink);
+  overflow-wrap: break-word;
+}
+
+.settings-role-line {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-role-badge {
+  font-size: 10.5px;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .04em;
   color: var(--gold);
-  font-weight: 700;
+  background: var(--gold-soft);
+  padding: 2px 9px;
+  border-radius: 999px;
 }
 
-.profile-lang-switch {
-  display: flex;
-  justify-content: center;
-  gap: 6px;
-  margin-bottom: 20px;
-}
-
-.profile-lang-switch button {
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  color: var(--muted);
+.settings-role-title {
   font-size: 12px;
+  color: var(--muted);
+}
+
+/* ---------- Sidebar + content shell ---------- */
+.settings-shell {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.settings-sidebar {
+  flex: none;
+  width: 184px;
+  position: sticky;
+  top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-sidebar button {
+  text-align: left;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  overflow-wrap: break-word;
+}
+
+.settings-sidebar button:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+.settings-sidebar button.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-left-color: var(--accent);
+}
+
+.settings-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px 20px;
+  scroll-margin-top: 20px;
+}
+
+.settings-card h2 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--accent);
+  margin: 0 0 14px;
+}
+
+.settings-section-hint {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin: -6px 0 14px;
+  max-width: 60ch;
+  overflow-wrap: break-word;
+}
+
+/* Session card's own hint, deliberately NOT .settings-section-hint — real
+   bug fixed 2026-08-27: that class's -6px top margin exists to tighten the
+   gap right under a card's own <h2> (where it's always used elsewhere).
+   Session instead places its hint AFTER a .settings-field-list, whose last
+   row already has padding-bottom: 0 — the same negative margin there pulled
+   this text 6px up INTO the field row above, a real visible overlap, not
+   just tight spacing. Positive margin on both sides gives it its own clear
+   line. */
+.settings-session-note {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin: 14px 0 14px;
+  max-width: 60ch;
+  overflow-wrap: break-word;
+}
+
+.settings-field-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.settings-field {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+
+.settings-field:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.settings-field span { color: var(--muted); }
+.settings-field b { color: var(--ink); font-weight: 650; text-align: right; }
+
+.settings-field-name { align-items: center; }
+
+.settings-name-display {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.settings-name-display b { overflow-wrap: break-word; }
+
+.settings-name-edit-btn {
+  flex: none;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--accent);
+  font-size: 11px;
   font-weight: 650;
-  padding: 6px 13px;
+  padding: 4px 10px;
   border-radius: 999px;
   cursor: pointer;
 }
 
-.profile-lang-switch button.active {
+.settings-name-edit-btn:hover { border-color: var(--accent); }
+
+.settings-name-edit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.settings-name-input {
+  border: 1px solid var(--accent);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 650;
+  padding: 6px 10px;
+  border-radius: 7px;
+  width: 180px;
+}
+
+.settings-name-save,
+.settings-name-cancel {
+  border: none;
+  font-size: 11.5px;
+  font-weight: 650;
+  padding: 7px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.settings-name-save {
   background: var(--accent-fill);
-  border-color: var(--accent-fill);
   color: #fff;
 }
 
-.profile-theme-row {
-  width: 100%;
+.settings-name-save:disabled { opacity: .6; cursor: default; }
+
+.settings-name-cancel {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.settings-pref-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  color: var(--ink);
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+  min-height: 0;
+}
+
+.settings-pref-label { min-width: 0; }
+
+.settings-pref-row:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.settings-pref-label span {
+  display: block;
   font-size: 13px;
-  font-weight: 600;
-  padding: 10px 14px;
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.settings-pref-label p {
+  margin: 2px 0 0;
+  font-size: 11.5px;
+  color: var(--muted);
+  max-width: 34ch;
+  overflow-wrap: break-word;
+}
+
+.settings-pref-control {
+  flex: none;
+  display: flex;
+  gap: 4px;
+  background: var(--surface-2);
+  border-radius: 999px;
+  padding: 3px;
+}
+
+.settings-pref-control button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* Real bug fixed 2026-08-27: with no fixed width, each language button
+   sized to its own label's rendered width — English/हिंदी/ಕನ್ನಡ render at
+   3 different widths, so the whole switch's total width (and everything
+   after it in the row) visibly shifted depending on which one was
+   currently active. min-width + centered content keeps all 3 buttons (and
+   the switch's overall footprint) identical regardless of selection. */
+.settings-lang-switch button {
+  min-width: 68px;
+  justify-content: center;
+}
+
+.settings-pref-control button.active {
+  background: var(--accent-fill);
+  color: #fff;
+}
+
+.settings-select {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 650;
+  padding: 8px 12px;
   border-radius: 8px;
   cursor: pointer;
-  margin-bottom: 12px;
 }
 
-.profile-theme-row:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+/* ---------- Real on/off toggle switch ---------- */
+.settings-toggle {
+  flex: none;
+  position: relative;
+  width: 42px;
+  height: 24px;
+  border-radius: 999px;
+  border: none;
+  background: var(--line);
+  cursor: pointer;
+  transition: background-color .15s ease;
 }
 
-.profile-signout {
+.settings-toggle.on {
+  background: var(--ok);
+}
+
+.settings-toggle-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .25);
+  transition: transform .15s ease;
+}
+
+.settings-toggle.on .settings-toggle-knob {
+  transform: translateX(18px);
+}
+
+.settings-signout {
   width: 100%;
   padding: 10px;
   border: none;
@@ -102,7 +414,50 @@
   cursor: pointer;
 }
 
-.profile-signout:hover {
+.settings-signout:hover {
   background: var(--crit);
   color: #fff;
+}
+
+@media (max-width: 860px) {
+  .settings-shell {
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .settings-sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    width: 100%;
+    flex-direction: row;
+    gap: 4px;
+    overflow-x: auto;
+    background: var(--bg);
+    padding: 8px 0;
+    margin: -8px 0 0;
+  }
+
+  .settings-sidebar button {
+    flex: none;
+    white-space: nowrap;
+    border-left: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 8px 8px 0 0;
+  }
+
+  .settings-sidebar button.active {
+    border-left-color: transparent;
+    border-bottom-color: var(--accent);
+  }
+}
+
+@media (max-width: 640px) {
+  .settings-pref-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .settings-pref-control { align-self: stretch; justify-content: center; }
+  .settings-select { width: 100%; }
 }

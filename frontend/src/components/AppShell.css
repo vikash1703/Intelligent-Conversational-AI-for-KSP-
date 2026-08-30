@@ -12,7 +12,17 @@
   flex: none;
   height: 60px;
   align-items: center;
-  gap: 28px;
+  /* 18px, not the original 28px — real bug found 2026-08-27: even at a
+     comfortable 1440px window, DGP's 3-dropdown nav (712px of real content)
+     didn't fit its own allotted space and needed an internal scroll just to
+     reach "Admin", the LAST item — a discoverability problem, not just a
+     cosmetic one. This is one of several trims (see .shell-brand-sub and
+     .shell-scope-text below) that together close most of that gap instead
+     of relying on .shell-nav's scroll as the everyday experience — that
+     scroll still exists as the last-resort safety valve for genuinely tight
+     widths, not the primary way to reach a nav item on an ordinary laptop
+     screen. */
+  gap: 18px;
   padding: 0 20px;
   background: var(--accent-fill-strong);
   color: #fff;
@@ -40,6 +50,13 @@
   font-size: 10px;
   color: rgba(255, 255, 255, .55);
   font-weight: 500;
+}
+
+/* Purely decorative below this width — hidden to give .shell-nav's real
+   content (up to 3 dropdown triggers for Admin/DGP) real room, part of the
+   same fix .shell-topbar's gap comment describes above. */
+@media (max-width: 1360px) {
+  .shell-brand-sub { display: none; }
 }
 
 .shell-nav {
@@ -71,7 +88,16 @@
   text-decoration: none;
   font-size: 13px;
   font-weight: 600;
-  padding: 8px 13px;
+  /* 10px, not the original 13px — real bug found 2026-08-28: two more real
+     nav destinations (Register FIR, Compliance) landed since the 2026-08-27
+     width pass, and a plain role (Inspector, only 2 dropdown triggers — the
+     SHORTER case that pass didn't separately re-verify) needed an internal
+     .shell-nav scroll just to reach "Operations" even at 1440px — the exact
+     discoverability problem that pass was written to close. This trim alone
+     doesn't require new dropdown-menu content to fit (menu items render via
+     a portal, outside .shell-nav entirely) — it's shaving the TRIGGER row's
+     own padding to restore the headroom two new destinations used up. */
+  padding: 8px 10px;
   border-radius: 7px;
   white-space: nowrap;
 }
@@ -86,49 +112,87 @@
   background: var(--gold);
 }
 
-.shell-lang-switch {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  background: rgba(255, 255, 255, .08);
-  border-radius: 8px;
-  padding: 2px;
+/* Grouped nav dropdowns (2026-08-26) — "Intelligence ▾"/"Operations ▾"/
+   "Admin ▾". flex: none (unlike .shell-nav a's flex-item default) so the
+   trigger's own width never gets squeezed by the scrollable nav row. */
+.shell-nav-dropdown {
+  position: relative;
   flex: none;
 }
 
-.shell-lang-switch button {
+.shell-nav-dropdown-trigger {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   background: none;
   border: none;
   color: rgba(255, 255, 255, .65);
-  font-size: 11.5px;
-  font-weight: 650;
-  padding: 5px 10px;
-  border-radius: 6px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 10px;
+  border-radius: 7px;
+  white-space: nowrap;
   cursor: pointer;
+}
+
+.shell-nav-dropdown-trigger:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, .08);
+}
+
+/* Same gold "active" treatment .shell-nav a.active uses — a dropdown
+   trigger reads as selected whenever the current route is one of its
+   children, exactly like a flat link would if it were the current page. */
+.shell-nav-dropdown-trigger.active {
+  color: var(--accent-fill-strong);
+  background: var(--gold);
+}
+
+.shell-nav-dropdown-chevron {
+  transition: transform .15s ease;
+}
+
+.shell-nav-dropdown-chevron.open {
+  transform: rotate(180deg);
+}
+
+/* position: fixed, not absolute — this menu portals into document.body
+   (see NavDropdown.jsx), so `top`/`left` are set inline from the trigger's
+   own getBoundingClientRect() (viewport-relative, which is what `fixed`
+   anchors against; `absolute` would instead anchor against document.body's
+   own normal-flow position, landing the menu in the wrong place). */
+.shell-nav-dropdown-menu {
+  position: fixed;
+  min-width: 200px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: var(--shadow-lg, var(--shadow));
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 100;
+}
+
+.shell-nav-dropdown-menu a {
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 10px;
+  border-radius: 7px;
   white-space: nowrap;
 }
 
-.shell-lang-switch button:hover {
-  color: #fff;
+.shell-nav-dropdown-menu a:hover {
+  background: var(--surface-2);
 }
 
-.shell-lang-switch button.active {
-  background: var(--gold);
-  color: var(--accent-fill-strong);
-}
-
-.shell-lang-switch-compact {
-  background: rgba(255, 255, 255, .1);
-}
-
-.shell-lang-switch-compact button {
-  color: rgba(255, 255, 255, .7);
-  font-size: 10.5px;
-  padding: 4px 7px;
-}
-
-.shell-lang-switch-compact button.active {
-  color: var(--accent-fill-strong);
+.shell-nav-dropdown-menu a.active {
+  color: var(--accent);
+  background: var(--accent-soft);
 }
 
 .shell-user {
@@ -138,6 +202,8 @@
   font-size: 12.5px;
   white-space: nowrap;
 }
+
+.shell-user-avatar-link { display: flex; flex: none; }
 
 .shell-user-name { font-weight: 650; }
 
@@ -149,6 +215,55 @@
   border: 1px solid rgba(255, 255, 255, .25);
   padding: 2px 7px;
   border-radius: 999px;
+}
+
+/* Jurisdiction breadcrumb (added 2026-08-23 as a pill badge; rebuilt
+   2026-08-26 into plain text — no border/background/pill). Both shell
+   headers always fill with --accent-fill-strong regardless of the page's
+   own light/dark theme (see .shell-topbar/.shell-mobile-topbar above), so
+   this still uses a fixed white-based (not page-theme) value to stay
+   legible against that navy fill in either theme — a muted white, not the
+   near-opaque full white .shell-user-name/role use, so it reads as
+   secondary breadcrumb text rather than competing with the username. */
+.shell-scope-text {
+  color: rgba(255, 255, 255, .6);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: default;
+}
+
+.shell-scope-text-warning {
+  color: #FFB4A8;
+  font-weight: 650;
+}
+
+/* Same real-estate fix as .shell-topbar's gap / .shell-brand-sub above —
+   the full breadcrumb ("Bengaluru Urban — Koramangala PS") can run past
+   100px; truncating it below 1360px hands that room back to .shell-nav's
+   dropdown triggers instead. The full text is still one hover away via the
+   existing title attribute. */
+@media (max-width: 1360px) {
+  .shell-scope-text:not(.shell-scope-text-compact) {
+    max-width: 110px;
+  }
+}
+
+.shell-scope-text-compact {
+  font-size: 10.5px;
+  /* Live-verified real bug (2026-08-23), still applicable to plain text:
+     a long label ("Bengaluru Urban — Koramangala PS") has no natural break
+     point, and a flex sibling with no min-width/max-width of its own
+     refuses to shrink below its full text width — this alone pushed the
+     whole mobile top bar (and so the page body) wider than the viewport, a
+     real horizontal-scroll regression, not a cosmetic one. Truncate
+     instead of forcing the row wider. */
+  flex: none;
+  max-width: 84px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .shell-user button {
@@ -167,12 +282,19 @@
 }
 
 /* ---------- Mobile top bar ---------- */
+/* gap/padding tightened 2026-08-25 — REAL BUG FIXED: adding the tray button
+   (an 8th fixed-width icon alongside logo/theme/language/scope-badge/bell/
+   avatar) pushed this row's real fixed-width content past what 10px gaps +
+   16px padding leaves room for at 390px (live-verified: body.scrollWidth
+   414 vs the required 390) — same class of overflow already fixed once for
+   the scope badge specifically; this time the fixed-width total itself
+   needed to shrink, not any one element's own width. */
 .shell-mobile-topbar {
   flex: none;
   height: 64px;
   align-items: center;
-  gap: 10px;
-  padding: 0 16px;
+  gap: 6px;
+  padding: 0 10px;
   background: var(--accent-fill-strong);
   color: var(--gold);
   box-shadow: var(--shadow);
@@ -186,22 +308,81 @@
   flex-direction: column;
 }
 
-.shell-mobile-bell,
+/* Just a link wrapper now (2026-08-27) — sizing/circle/background all live
+   on the <Avatar> component itself (see Avatar.css), which needs to render
+   identically here and in the desktop header/Settings' own identity card,
+   not duplicated per call site. */
 .shell-mobile-avatar {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, .1);
-  color: #fff;
   flex: none;
 }
 
-.shell-mobile-avatar {
-  background: var(--gold);
-  color: var(--accent-fill-strong);
+/* Investigation Tray entry point (Tier 1 item 10) — desktop version sits
+   inline with the other header controls; .shell-tray-btn-compact reuses the
+   same round mobile-icon-button treatment as the bell/avatar above. */
+.shell-tray-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: var(--muted);
+  flex: none;
+}
+
+.shell-tray-btn:hover,
+.shell-tray-btn.active {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+/* Settings entry point (2026-08-26) — same round-icon-button treatment as
+   .shell-tray-btn just above, but sits inside .shell-user (white-on-navy
+   context regardless of page theme, same rationale .shell-user-role's own
+   comment already gives), so its resting color is a muted white instead of
+   --muted. */
+.shell-settings-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  color: rgba(255, 255, 255, .6);
+  flex: none;
+}
+
+.shell-settings-btn:hover,
+.shell-settings-btn.active {
+  color: var(--gold);
+  background: rgba(255, 255, 255, .1);
+}
+
+.shell-tray-btn-compact {
+  width: 34px;
+  height: 34px;
+  background: rgba(255, 255, 255, .1);
+  color: #fff;
+}
+
+.shell-tray-badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: var(--crit);
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 /* ---------- Mobile bottom tab bar ---------- */

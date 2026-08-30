@@ -4,7 +4,7 @@ diagram (Police_FIR_ER_Diagram.pdf) to catch missing tables/columns before
 the backend starts querying them.
 
 Usage: python scripts/verify_schema.py
-Requires ZOHO_REFRESH_TOKEN in .env to have ZohoCatalyst.tables.READ and
+Requires ZIA_OAUTH_REFRESH_TOKEN in .env to have ZohoCatalyst.tables.READ and
 ZohoCatalyst.tables.columns.READ scopes.
 """
 import sys

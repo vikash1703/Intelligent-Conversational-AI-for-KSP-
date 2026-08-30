@@ -20,6 +20,39 @@
 
 .alerts-note { color: var(--muted); font-size: 13px; }
 
+.alerts-jurisdiction {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0 0 14px;
+}
+
+.alerts-jurisdiction b { color: var(--ink); }
+
+.alerts-all-clear {
+  background: var(--ok-bg);
+  border: 1px solid var(--ok);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.alerts-all-clear p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ok);
+  line-height: 1.5;
+}
+
+.alerts-all-clear .alerts-ask-ai {
+  align-self: flex-start;
+  width: auto;
+  padding: 7px 14px;
+}
+
 .alerts-error {
   color: var(--crit);
   background: var(--crit-bg);

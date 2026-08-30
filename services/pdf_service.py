@@ -28,8 +28,8 @@ logger = logging.getLogger("PdfService")
 _FONTS_DIR = Path(__file__).resolve().parent.parent / "assets" / "fonts"
 
 
-def _new_pdf() -> FPDF:
-    pdf = FPDF()
+def _new_pdf(orientation: str = "P") -> FPDF:
+    pdf = FPDF(orientation=orientation)
     pdf.add_page()
     # No separate bold/italic TTFs are bundled — registering the same regular
     # face under the B/I style slots avoids fpdf2 falling back to core "Arial"
@@ -128,6 +128,231 @@ def generate_conversation_report(session_id: str, messages: list, target_languag
 
     os.makedirs("temp_reports", exist_ok=True)
     file_path = f"temp_reports/Conversation_{session_id}.pdf"
+    pdf.output(file_path)
+    return file_path
+
+
+def generate_financial_report(transactions: list[dict], summary: dict) -> str:
+    """Suspicious-transactions report — 2026-08-27, Financial Intelligence
+    page's Export button. Formats data the caller already fetched from the
+    real, existing /financial/summary and /financial/suspicious endpoints;
+    computes nothing new here, same "presentation only" boundary every
+    report in this file keeps from its own domain service."""
+    pdf = _new_pdf()
+
+    pdf.set_font("NotoSans", 'B', 16)
+    pdf.cell(200, 10, txt="Suspicious Transactions Report", ln=True, align='C')
+    pdf.set_font("NotoSans", 'I', 10)
+    current_time = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+    pdf.cell(200, 8, txt=f"Generated: {current_time} | KSP Sahay", ln=True, align='C')
+    pdf.ln(4)
+
+    pdf.set_font("NotoSans", 'B', 11)
+    pdf.cell(0, 8, txt=f"Total transactions: {summary.get('total', '-')}  |  Flagged suspicious: {summary.get('flagged', '-')}", ln=True)
+    pdf.ln(4)
+
+    col_widths = [30, 28, 32, 28, 30, 42]
+    headers = ["Txn ID", "Amount (Rs)", "Type", "Date", "Type flag rate", "High-tail"]
+    pdf.set_font("NotoSans", 'B', 9)
+    for w, h in zip(col_widths, headers):
+        pdf.cell(w, 8, txt=h, border=1)
+    pdf.ln()
+
+    pdf.set_font("NotoSans", size=9)
+    for t in transactions:
+        pdf.set_x(pdf.l_margin)
+        pdf.cell(col_widths[0], 7, txt=str(t.get("transaction_id", "-")), border=1)
+        pdf.cell(col_widths[1], 7, txt=f"{t.get('amount', 0):,}", border=1)
+        pdf.cell(col_widths[2], 7, txt=str(t.get("transaction_type", "-")), border=1)
+        pdf.cell(col_widths[3], 7, txt=str(t.get("recorded_at", "-"))[:10], border=1)
+        rate = t.get("type_suspicious_rate_pct")
+        pdf.cell(col_widths[4], 7, txt=f"{rate}%" if rate is not None else "-", border=1)
+        pdf.cell(col_widths[5], 7, txt="Top 10% for type" if t.get("is_high_tail_for_type") else "-", border=1)
+        pdf.ln()
+
+    pdf.ln(6)
+    pdf.set_font("NotoSans", 'I', 8)
+    pdf.multi_cell(0, 6, txt=(
+        "Note: is_suspicious is a raw flag in the source dataset — this report's context columns "
+        "(type flag rate, high-tail) are real, computed statistics, not a stated reason for any flag. "
+        "This dataset's FinancialTransaction table has no working case/account linkage; transactions "
+        "cannot be tied to a specific case, accused, or counterparty."
+    ))
+
+    os.makedirs("temp_reports", exist_ok=True)
+    file_path = f"temp_reports/Financial_Suspicious_Report_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
+    pdf.output(file_path)
+    return file_path
+
+
+def generate_custody_hearings_report(hearings: list[dict], jurisdiction_label: str) -> str:
+    """Upcoming-hearings report — 2026-08-27, Custody Registry's Export
+    button. Same presentation-only boundary as generate_financial_report."""
+    pdf = _new_pdf()
+
+    pdf.set_font("NotoSans", 'B', 16)
+    pdf.cell(200, 10, txt="Upcoming Hearings Report", ln=True, align='C')
+    pdf.set_font("NotoSans", 'I', 10)
+    current_time = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+    pdf.cell(200, 8, txt=f"Jurisdiction: {jurisdiction_label} | Generated: {current_time}", ln=True, align='C')
+    pdf.ln(6)
+
+    col_widths = [26, 40, 32, 32, 32]
+    headers = ["Hearing date", "Accused name", "Crime type", "Crime no", "Arrest date"]
+    pdf.set_font("NotoSans", 'B', 9)
+    for w, h in zip(col_widths, headers):
+        pdf.cell(w, 8, txt=h, border=1)
+    pdf.ln()
+
+    pdf.set_font("NotoSans", size=9)
+    for h in hearings:
+        pdf.set_x(pdf.l_margin)
+        pdf.cell(col_widths[0], 7, txt=str(h.get("next_hearing_date", "-")), border=1)
+        pdf.cell(col_widths[1], 7, txt=str(h.get("accused_name") or "-"), border=1)
+        pdf.cell(col_widths[2], 7, txt=str(h.get("crime_type", "-")), border=1)
+        pdf.cell(col_widths[3], 7, txt=str(h.get("crime_no") or "-"), border=1)
+        pdf.cell(col_widths[4], 7, txt=str(h.get("arrest_date", "-")), border=1)
+        pdf.ln()
+
+    pdf.ln(6)
+    pdf.set_font("NotoSans", 'I', 8)
+    pdf.multi_cell(0, 6, txt=(
+        "Note: hearing dates are simulated (this dataset provides arrest records only, not a real "
+        "next_hearing_date field) — this report demonstrates deployment capability, not real "
+        "court schedules. See the Custody Registry page's own disclosure banner for full detail."
+    ))
+
+    os.makedirs("temp_reports", exist_ok=True)
+    file_path = f"temp_reports/Custody_Hearings_Report_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
+    pdf.output(file_path)
+
+    return file_path
+
+
+def generate_chargesheet_draft_report(crime_no: str, draft_text: str) -> str:
+    """Chargesheet Draft feature (added 2026-08-29) — renders the already-
+    generated draft_text (LLM-composed or template-fallback, see
+    services.chargesheet_service) as a downloadable PDF. Section headings
+    (all-caps lines like "OFFENCES", "BRIEF FACTS") are bolded when detected,
+    everything else printed as regular body text — a light presentation-only
+    pass, no re-parsing/re-generation of the content itself."""
+    pdf = _new_pdf()
+
+    pdf.set_font("NotoSans", 'B', 16)
+    pdf.cell(200, 10, txt=f"Chargesheet Draft: {crime_no}", ln=True, align='C')
+    pdf.set_font("NotoSans", 'I', 10)
+    current_time = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+    pdf.cell(200, 8, txt=f"AI-generated draft — review before official use | Generated: {current_time}", ln=True, align='C')
+    pdf.ln(8)
+
+    for raw_line in draft_text.split("\n"):
+        line = raw_line.strip()
+        pdf.set_x(pdf.l_margin)
+        if not line:
+            pdf.ln(3)
+            continue
+        # A short, ALL-CAPS line (the 7 fixed section headings the prompt
+        # requires) is treated as a heading — anything longer is real prose
+        # that just happens to contain capitals, not a heading.
+        if line.isupper() and len(line) <= 40:
+            pdf.set_font("NotoSans", 'B', 12)
+            pdf.multi_cell(0, 8, txt=line)
+            pdf.set_x(pdf.l_margin)
+        else:
+            pdf.set_font("NotoSans", size=11)
+            pdf.multi_cell(0, 7, txt=line)
+
+    os.makedirs("temp_reports", exist_ok=True)
+    file_path = f"temp_reports/Chargesheet_Draft_{crime_no}.pdf"
+    pdf.output(file_path)
+    return file_path
+
+
+_TRAY_FIELDS = [
+    ("Crime type", "crime_type"),
+    ("IPC sections", "ipc_sections"),
+    ("Status", "status"),
+    ("District", "district"),
+    ("Station", "station"),
+    ("Registered date", "registered_date"),
+    ("Incident date", "incident_date"),
+    ("Accused count", "accused_count"),
+    ("Victim count", "victim_count"),
+    ("Arrest count", "arrest_count"),
+    ("Chargesheet status", "chargesheet_status"),
+]
+
+
+def _fit_cell_text(pdf: FPDF, text: str, width: float, pad: float = 3) -> str:
+    """fpdf2's cell() doesn't wrap or clip — text wider than its cell just
+    overflows past the border and misaligns every cell after it. This
+    truncates to an ellipsis based on the font's own real rendered width
+    (get_string_width), not a guessed character count, so it stays correct
+    regardless of font size or which characters are in play."""
+    text = str(text)
+    if pdf.get_string_width(text) <= width - pad:
+        return text
+    while text and pdf.get_string_width(text + "…") > width - pad:
+        text = text[:-1]
+    return f"{text}…" if text else "…"
+
+
+def generate_tray_comparison_report(cases: list[dict]) -> str:
+    """Investigation Tray's Export button — one column per pinned case
+    (up to 5, landscape so that many real columns stay readable), one row
+    per comparison field, mirroring InvestigationTray.jsx's own on-screen
+    table exactly. `cases` is server-computed (services.db_service.
+    get_tray_comparison), not client-trusted — a case that fell out of the
+    caller's jurisdiction since being pinned is already excluded/error-
+    flagged before this function ever sees it, so a modified frontend can't
+    smuggle stale or out-of-scope values into an exported document."""
+    pdf = _new_pdf(orientation="L")
+    page_w = pdf.w - pdf.l_margin - pdf.r_margin
+
+    pdf.set_font("NotoSans", 'B', 16)
+    pdf.cell(page_w, 10, txt="Case Comparison Report", ln=True, align='C')
+    pdf.set_font("NotoSans", 'I', 10)
+    current_time = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+    pdf.cell(page_w, 8, txt=f"Generated: {current_time} | KSP Sahay", ln=True, align='C')
+    pdf.ln(4)
+
+    field_col_w = 42
+    case_col_w = min(50, (page_w - field_col_w) / max(1, len(cases)))
+
+    pdf.set_font("NotoSans", 'B', 9)
+    pdf.cell(field_col_w, 8, txt="Field", border=1)
+    for c in cases:
+        pdf.cell(case_col_w, 8, txt=_fit_cell_text(pdf, c["crime_no"], case_col_w), border=1)
+    pdf.ln()
+
+    pdf.set_font("NotoSans", size=8)
+    for label, key in _TRAY_FIELDS:
+        pdf.set_x(pdf.l_margin)
+        pdf.cell(field_col_w, 7, txt=label, border=1)
+        for c in cases:
+            if c.get("error"):
+                val = "-"
+            else:
+                raw = c.get(key)
+                if key == "ipc_sections":
+                    val = ", ".join(raw) if raw else "-"
+                elif raw is None or raw == "":
+                    val = "-"
+                else:
+                    val = str(raw)
+            pdf.cell(case_col_w, 7, txt=_fit_cell_text(pdf, val, case_col_w), border=1)
+        pdf.ln()
+
+    pdf.ln(6)
+    pdf.set_font("NotoSans", 'I', 8)
+    pdf.multi_cell(0, 6, txt=(
+        "Values shown are freshly fetched at export time, scoped to your own jurisdiction — a "
+        "pinned case no longer visible to you shows as \"-\" in every row. Matching values "
+        "highlighted on-screen are not re-marked here; compare columns directly."
+    ))
+
+    os.makedirs("temp_reports", exist_ok=True)
+    file_path = f"temp_reports/Tray_Comparison_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
     pdf.output(file_path)
 
     return file_path

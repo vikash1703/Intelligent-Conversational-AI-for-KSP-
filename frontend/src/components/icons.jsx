@@ -32,6 +32,15 @@ export const InsightsIcon = (p) => (
 export const ShieldIcon = (p) => (
   <svg {...common} {...p}><path d="M12 3 19 6v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z" /></svg>
 );
+export const TargetIcon = (p) => (
+  <svg {...common} {...p}><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="4" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3" /></svg>
+);
+export const CoinIcon = (p) => (
+  <svg {...common} {...p}><circle cx="12" cy="12" r="9" /><path d="M12 7v10M9.5 9.2a2.2 2.2 0 0 1 2.5-1.7c1.4 0 2.5.8 2.5 2s-1.1 1.8-2.5 2-2.5.8-2.5 2 1.1 2 2.5 2a2.2 2.2 0 0 0 2.5-1.7" /></svg>
+);
+export const ClipboardCheckIcon = (p) => (
+  <svg {...common} {...p}><rect x="5" y="4" width="14" height="17" rx="1.5" /><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1" /><path d="M9 13l2 2 4-4.5" /></svg>
+);
 export const MicIcon = (p) => (
   <svg {...common} {...p}><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></svg>
 );
@@ -97,4 +106,21 @@ export const ThumbtackIcon = (p) => (
 );
 export const SendIcon = (p) => (
   <svg {...common} {...p}><path d="M4 12 20 4l-6 16-2.5-6.5L4 12Z" /></svg>
+);
+export const LockIcon = (p) => (
+  <svg {...common} {...p}><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
+);
+export const SunriseIcon = (p) => (
+  <svg {...common} {...p}><path d="M4 18h16M6 15a6 6 0 0 1 12 0M12 8V4M5 8l2.5 2.5M19 8l-2.5 2.5" /></svg>
+);
+export const SettingsIcon = (p) => (
+  <svg {...common} {...p}>
+    <circle cx="12" cy="12" r="3.2" />
+    <path d="M12 3.5v2.4M12 18.1v2.4M4.8 7l2.1 1.2M17.1 15.8l2.1 1.2M4.8 17l2.1-1.2M17.1 8.2l2.1-1.2M3.5 12h2.4M18.1 12h2.4" />
+  </svg>
+);
+export const ComputerIcon = (p) => (
+  <svg {...common} {...p}>
+    <rect x="3" y="4.5" width="18" height="12" rx="1.5" /><path d="M9 20h6M12 16.5V20" />
+  </svg>
 );

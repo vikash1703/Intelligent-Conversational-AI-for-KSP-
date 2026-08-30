@@ -76,6 +76,26 @@
   border-radius: 6px;
 }
 
+/* Neutral finding, not an error — a thin/no-cluster MO result or a "wrong
+   field" nudge are both expected, informational states, styled distinctly
+   from .ins-error's red so neither reads as something having gone wrong. */
+.ins-info-banner {
+  color: var(--info);
+  background: var(--info-bg);
+  font-size: 12.5px;
+  line-height: 1.5;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin: 8px 0 0;
+}
+
+.ins-info-banner-note {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 11px;
+  opacity: .85;
+}
+
 .ins-text {
   font-size: 13px;
   color: var(--ink);

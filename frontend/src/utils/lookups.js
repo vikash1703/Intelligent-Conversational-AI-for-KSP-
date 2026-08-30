@@ -34,6 +34,18 @@ export function caseStatusLabel(caseStatusId) {
   return CASE_STATUS_LABELS[caseStatusId] || "Unknown";
 }
 
+// Mirrors services/analytics_service.extract_crime_type's exact regex —
+// CaseMaster has no crime-type classification column of its own (see that
+// module's docstring), so this is the same client-side extraction already
+// used to derive a crime-type filter's real options; used here to show a
+// crime-type badge per case-list row without a second backend field.
+const BRIEF_FACTS_PATTERN = /Investigation regarding (.+?) registered\.?/;
+
+export function crimeTypeFromBriefFacts(briefFacts) {
+  const match = BRIEF_FACTS_PATTERN.exec(briefFacts || "");
+  return match ? match[1] : "Unspecified";
+}
+
 // ActSectionAssociation carries only bare ActCode/SectionCode strings, no
 // name. IPC codes resolve against ipcSectionMap (fetched once from the
 // backend's GET /legal/ipc-sections — the same KB that answers chat's
@@ -61,6 +73,35 @@ export function actSectionLabel(actCode, sectionCode, ipcSectionMap, unresolvedI
 // live ActSectionAssociation table can carry identical pairs more than once
 // for the same case (verified: e.g. two identical "IT 66D" rows), which would
 // otherwise render as visually-duplicate cards for the same real charge.
+// Role-aware jurisdiction breadcrumb — shared 2026-08-26 between AppShell's
+// header and the Settings page's account card, both of which need the exact
+// same real-facts-in/text-out composition (see below) and shouldn't be able
+// to drift into two different answers for "what does this officer's
+// jurisdiction actually say". The SHAPE of the text is fixed per real
+// access_level (ALL/Zone/District/Station, from services/permission_service.
+// describe_scope, carried in the JWT); the district/station WORDS are always
+// the officer's own real ones, never hardcoded — Karnataka's 4 real ranks
+// each map to exactly one access level, so in practice this reads:
+// Admin/DGP -> "Karnataka State Police" (no single district to name),
+// IGP -> "{district} Zone", SP -> "{district} District",
+// Inspector -> "{station}" alone (no district prefix — already specific
+// enough on its own).
+export function scopeBreadcrumb(t, user) {
+  if (!user) return null;
+  if (user.accessLevel == null || user.accessLevel === "ALL") return t("nav.scopeAllDistricts");
+  if (!user.homeDistrict) return t("nav.scopeNotConfigured");
+  if (user.accessLevel === "Station" && user.homeStationName) {
+    // Real Unit.UnitName values are always "{Locality} Police Station" —
+    // abbreviated to "{Locality} PS", the same shorthand KSP officers
+    // themselves use ("Koramangala PS"), not a translation (the locality
+    // name itself is untouched, in any language).
+    return user.homeStationName.replace(/\s+Police Station$/i, " PS");
+  }
+  if (user.accessLevel === "Zone") return `${user.homeDistrict} ${t("nav.scopeZoneSuffix")}`;
+  if (user.accessLevel === "District") return `${user.homeDistrict} ${t("nav.scopeDistrictSuffix")}`;
+  return user.homeDistrict;
+}
+
 export function dedupeActSections(rows) {
   const seen = new Set();
   const result = [];

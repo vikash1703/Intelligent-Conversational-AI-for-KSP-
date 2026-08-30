@@ -581,7 +581,7 @@ class HTML2FPDF(HTMLParser):
         self._paragraph = self._column.paragraph(
             text_align=self.align if isinstance(self.align, Align) else None,
             line_height=line_height,
-            skip_leading_spaces=True,
+            skip_leading_spaces=not self._pre_formatted,
             top_margin=top_margin,
             bottom_margin=bottom_margin,
             indent=indent,
@@ -1188,6 +1188,13 @@ class HTML2FPDF(HTMLParser):
             )
         if tag == "toc":
             self._end_paragraph()
+            self.pdf.set_font(
+                family=self.font_family,
+                size=self.font_size_pt,
+                style=self.font_emphasis.style,
+            )
+            if self.font_color != self.pdf.text_color and self.font_color is not None:
+                self.pdf.set_text_color(self.font_color)
             self.pdf.insert_toc_placeholder(
                 self.render_toc, pages=int(attrs_dict.get("pages") or "1")
             )
@@ -1354,8 +1361,8 @@ class HTML2FPDF(HTMLParser):
         pdf.ln()
         for section in outline:
             link = pdf.add_link(page=section.page_number)
-            text = f'{" " * section.level * 2} {section.name}'
-            text += f' {"." * (60 - section.level*2 - len(section.name))} {section.page_number}'
+            text = f"{' ' * section.level * 2} {section.name}"
+            text += f" {'.' * (60 - section.level * 2 - len(section.name))} {section.page_number}"
             pdf.multi_cell(
                 w=pdf.epw,
                 h=pdf.font_size,

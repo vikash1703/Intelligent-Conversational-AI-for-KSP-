@@ -58,6 +58,20 @@ from chat.llm_client import call_llm_with_retry
 
 logger = logging.getLogger("LLMProvider")
 
+# Shared connection pool for every Groq/Gemini HTTP call in this module.
+# Live-measured 2026-08-22: bare module-level requests.post(...) calls (what
+# every call site here used before this) each internally open-and-discard
+# their own throwaway requests.Session() per call — requests' own documented
+# behavior for the top-level api.post() convenience function, not a bug in
+# our code, but it means a fresh TCP+TLS handshake to Google's/Groq's servers
+# on literally every single completion call, never reusing a warm connection.
+# This was the single largest stage in the /chat/stream first-token
+# breakdown (1257ms of "Gemini stream startup"). One process-lifetime
+# Session (urllib3 connection pooling + keep-alive) fixes it — same requests,
+# same responses, no behavior change, just a warm connection on every call
+# after the first to a given host.
+_http = requests.Session()
+
 
 class RateLimitError(Exception):
     """Raised specifically for an HTTP 429 from a provider, distinct from a
@@ -84,11 +98,9 @@ class LLMProvider(ABC):
 
     @abstractmethod
     def stream(self, prompt: str, temperature: float = 0.2, budget: Budget | None = None):
-        """Yields text chunks. Not currently wired into any caller (this
-        project's chat responses are synchronous single-shot, with the
-        frontend doing its own simulated progressive reveal) — implemented
-        for interface completeness and so a future streaming caller has a
-        real, working implementation to call rather than a stub."""
+        """Yields text chunks. Wired into POST /chat/stream (see
+        chat/llm_provider.rag_answer_with_failover_stream and
+        api/routers/chat.py's _stream_chat_response) as of 2026-08-22."""
 
 
 class ZiaProvider(LLMProvider):
@@ -142,7 +154,7 @@ class GroqProvider(LLMProvider):
             payload["response_format"] = {"type": "json_object"}
         start = time.monotonic()
         try:
-            response = requests.post(_GROQ_ENDPOINT, json=payload, headers=self._headers(), timeout=timeout)
+            response = _http.post(_GROQ_ENDPOINT, json=payload, headers=self._headers(), timeout=timeout)
         except Exception:
             record_call(None, provider="groq")
             raise
@@ -196,7 +208,7 @@ class GroqProvider(LLMProvider):
             "stream": True,
         }
         timeout = budget.call_timeout() if budget is not None else TIMEOUT_SECONDS
-        with requests.post(_GROQ_ENDPOINT, json=payload, headers=self._headers(), timeout=timeout, stream=True) as response:
+        with _http.post(_GROQ_ENDPOINT, json=payload, headers=self._headers(), timeout=timeout, stream=True) as response:
             if response.status_code != 200:
                 raise Exception(f"Groq API error {response.status_code}: {response.text}")
             for line in response.iter_lines():
@@ -247,7 +259,7 @@ class GeminiProvider(LLMProvider):
             payload["generationConfig"]["responseMimeType"] = "application/json"
         start = time.monotonic()
         try:
-            response = requests.post(
+            response = _http.post(
                 self._endpoint("generateContent", model),
                 params={"key": settings.GEMINI_API_KEY},
                 json=payload,
@@ -319,7 +331,7 @@ class GeminiProvider(LLMProvider):
             raise Exception("GEMINI_API_KEY is not configured")
         payload = {"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"temperature": temperature}}
         timeout = budget.call_timeout() if budget is not None else TIMEOUT_SECONDS
-        with requests.post(
+        with _http.post(
             self._endpoint("streamGenerateContent"),
             params={"key": settings.GEMINI_API_KEY, "alt": "sse"},
             json=payload, timeout=timeout, stream=True,
@@ -492,6 +504,87 @@ def rag_answer_with_failover(final_query: str, budget: "Budget | None" = None) -
             errors[provider.name] = str(e)
             logger.warning(f"{provider.name} composition call failed: {e}")
             record_result(provider.name, False, is_rate_limit=_is_rate_limit(e))
+        if budget is not None and budget.exceeded():
+            break
+
+    raise Exception(errors.get(primary) or f"All composition providers failed: {errors}")
+
+
+def rag_answer_with_failover_stream(final_query: str, budget: "Budget | None" = None):
+    """Streaming counterpart to rag_answer_with_failover() — same composition
+    chain (Gemini -> Zia, Groq structurally excluded, same reasoning as the
+    blocking version) and same grounding contract (final_query already
+    carries whatever local context the caller built in — see
+    api/routers/chat.py's _build_grounded_query), but yields incrementally
+    instead of returning once at the end, for /chat/stream's SSE response.
+
+    Yields dicts of one of two shapes:
+      {"type": "token", "text": "..."} — a chunk of the answer as it's
+        generated (real, provider-native streaming from Gemini; a single
+        chunk carrying the whole answer if Zia ends up answering instead,
+        since Zia's endpoint has no incremental API to relay — same honest
+        distinction chat/llm_provider.LLMProvider.stream()'s own docstrings
+        already draw).
+      {"type": "done", "citations": [...], "provider_used": ..., "fallback_reason": ...,
+        "latency_ms": ...} — exactly once, last, after all token chunks.
+
+    Failover is only attempted BEFORE any token has been yielded for this
+    turn — once Gemini has started streaming real content to the user,
+    switching providers mid-stream would mean discarding partially-shown
+    text (worse UX than just letting a rare mid-stream failure surface as an
+    honest error). This mirrors the non-streaming version's per-provider
+    budget slicing for the pre-first-token case; once streaming has begun,
+    the budget/failover machinery is no longer in play for this turn."""
+    from chat.circuit_breaker import record_result
+    from services.zoho_service import ask_zoho_rag
+
+    chain = _ordered_chain("composition")
+    if not chain:
+        raise Exception("No composition provider available")
+
+    errors: dict[str, str] = {}
+    primary = task_primary("composition")
+    for i, provider in enumerate(chain):
+        call_budget = budget.child(1 / (len(chain) - i)) if budget is not None else None
+        started_streaming = False
+        try:
+            start = time.monotonic()
+            if provider.name == "zia":
+                result = ask_zoho_rag(final_query, budget=call_budget)
+                started_streaming = True  # about to yield — no more failover past this point
+                yield {"type": "token", "text": result["answer"]}
+                citations = result["citations"]
+            else:
+                chunks = []
+                for chunk in provider.stream(final_query, temperature=0.2, budget=call_budget):
+                    started_streaming = True  # first chunk landed — committed to this provider now
+                    chunks.append(chunk)
+                    yield {"type": "token", "text": chunk}
+                citations = []
+                if not chunks:
+                    raise Exception(f"{provider.name} stream produced no content")
+            latency_ms = (time.monotonic() - start) * 1000
+            record_result(provider.name, True)
+            if provider.name == primary:
+                reason = None
+            elif primary in errors:
+                reason = f"{primary} failed: {errors[primary]}"
+            else:
+                reason = f"{primary} unavailable (circuit breaker open)"
+            yield {"type": "done", "citations": citations, "provider_used": provider.name,
+                   "fallback_reason": reason, "latency_ms": latency_ms}
+            return
+        except Exception as e:
+            errors[provider.name] = str(e)
+            logger.warning(f"{provider.name} streaming composition call failed: {e}")
+            record_result(provider.name, False, is_rate_limit=_is_rate_limit(e))
+            if started_streaming:
+                # Already shown the user real (partial) text from this provider —
+                # raising here surfaces as an honest stream-level error rather
+                # than silently retrying a different provider from scratch,
+                # which would either duplicate or contradict what's already on
+                # screen. See this function's docstring.
+                raise
         if budget is not None and budget.exceeded():
             break
 

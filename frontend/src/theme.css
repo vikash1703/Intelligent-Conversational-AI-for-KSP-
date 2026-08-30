@@ -1,10 +1,10 @@
 :root {
-  --bg: #EFF2F7;
+  --bg: #F8F7F4;
   --surface: #FFFFFF;
   --surface-2: #F6F8FB;
   --ink: #161C2B;
   --muted: #565F76;
-  --line: #DBE1EA;
+  --line: #E8E6E1;
 
   /* Institutional police navy + badge gold — deliberately not a generic
      purple-gradient "AI product" palette. */
@@ -30,6 +30,12 @@
   --warn-bg: #FAEFDC;
   --crit: #B23A3A;
   --crit-bg: #FAE9E9;
+  /* A true orange, deliberately between --crit (red) and --warn (amber) —
+     added 2026-08-28 for the BNSS Compliance Tracker's 4-tier severity
+     (BREACHED/CRITICAL/WARNING/ON TRACK needs 4 visually distinct colors,
+     one more than this app's existing 3-tier crit/warn/ok semantic set). */
+  --orange: #C1601F;
+  --orange-bg: #FBEDE0;
   --info: #3B6FA6;
   --info-bg: #E8F0F9;
   --purple: #6A4C93;
@@ -73,6 +79,8 @@
     --warn-bg: #33291A;
     --crit: #E1706C;
     --crit-bg: #34201F;
+    --orange: #E08A4F;
+    --orange-bg: #33231A;
     --info: #7EA6DD;
     --info-bg: #1E2C40;
     --purple: #B9A0E8;
@@ -105,6 +113,8 @@
   --warn-bg: #33291A;
   --crit: #E1706C;
   --crit-bg: #34201F;
+  --orange: #E08A4F;
+  --orange-bg: #33231A;
   --info: #7EA6DD;
   --info-bg: #1E2C40;
   --purple: #B9A0E8;
@@ -115,12 +125,12 @@
 }
 
 :root[data-theme="light"] {
-  --bg: #EFF2F7;
+  --bg: #F8F7F4;
   --surface: #FFFFFF;
   --surface-2: #F6F8FB;
   --ink: #161C2B;
   --muted: #565F76;
-  --line: #DBE1EA;
+  --line: #E8E6E1;
 
   --accent: #1F3A66;
   --accent-strong: #16294B;
@@ -136,6 +146,12 @@
   --warn-bg: #FAEFDC;
   --crit: #B23A3A;
   --crit-bg: #FAE9E9;
+  /* A true orange, deliberately between --crit (red) and --warn (amber) —
+     added 2026-08-28 for the BNSS Compliance Tracker's 4-tier severity
+     (BREACHED/CRITICAL/WARNING/ON TRACK needs 4 visually distinct colors,
+     one more than this app's existing 3-tier crit/warn/ok semantic set). */
+  --orange: #C1601F;
+  --orange-bg: #FBEDE0;
   --info: #3B6FA6;
   --info-bg: #E8F0F9;
   --purple: #6A4C93;

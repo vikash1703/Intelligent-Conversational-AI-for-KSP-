@@ -1,0 +1,16 @@
+.ksp-avatar {
+  flex: none;
+  border-radius: 50%;
+  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  letter-spacing: .02em;
+  line-height: 1;
+}
+
+.ksp-avatar-fallback {
+  background: var(--accent-soft);
+  color: var(--accent);
+}

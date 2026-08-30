@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { api, ApiError } from "../api/client";
-import { ChatIcon, CasesIcon, NetworkIcon, MapIcon, AnalyticsIcon, InsightsIcon, AlertsIcon, SocialIcon } from "../components/icons";
+import { ChatIcon, CasesIcon, NetworkIcon, MapIcon, AnalyticsIcon, InsightsIcon, AlertsIcon, SocialIcon, TargetIcon, CoinIcon, ClipboardCheckIcon, LockIcon, SunriseIcon, PlusIcon } from "../components/icons";
 import KspLogo from "../components/KspLogo";
 import "./Home.css";
 
@@ -16,6 +16,20 @@ const QUICK_ACTIONS = [
   { to: "/insights", key: "actionAiInsights", Icon: InsightsIcon, tone: "purple" },
   { to: "/alerts", key: "actionAlerts", Icon: AlertsIcon, tone: "crit" },
   { to: "/social-insights", key: "actionSocialInsights", Icon: SocialIcon, tone: "ok" },
+  // These 3 (added 2026-08-23) are ONLY reachable on mobile through this grid —
+  // the bottom tab bar is a deliberately fixed 5 items (see AppShell.jsx's own
+  // comment on MOBILE_TABS indexing NAV_ITEMS positionally), same as how
+  // Cases/Network/Map/SocialInsights above have always worked on mobile.
+  { to: "/offender-profiling", key: "actionOffenderProfiling", Icon: TargetIcon, tone: "crit" },
+  { to: "/financial-intelligence", key: "actionFinancialIntelligence", Icon: CoinIcon, tone: "gold" },
+  { to: "/data-quality", key: "actionDataQuality", Icon: ClipboardCheckIcon, tone: "muted" },
+  { to: "/custody", key: "actionCustodyRegistry", Icon: LockIcon, tone: "warn" },
+  { to: "/briefing", key: "actionShiftBriefing", Icon: SunriseIcon, tone: "info" },
+  // allowedRoles mirrors the real can_register_fir RolePermission flag
+  // (Inspector/SP/Admin=true, DGP/IGP=false) — same client-side-convenience-
+  // only filter as AppShell.jsx's own nav entry for this page; the real
+  // gate is server-side (core.security.require_permission).
+  { to: "/fir/register", key: "actionRegisterFir", Icon: PlusIcon, tone: "crit", allowedRoles: ["Inspector", "SP", "Admin"] },
 ];
 
 function greetingKey() {
@@ -36,10 +50,16 @@ export default function Home() {
   useEffect(() => {
     async function load() {
       try {
+        // REAL BUG FIXED 2026-08-24 (codebase-wide timeout audit): none of
+        // these 3 had a timeoutMs — a stall on any one left this Promise.all
+        // (and this page, the first thing every user sees after login)
+        // permanently blank with zero error, since a never-settling Promise
+        // never reaches .then or .catch. See Alerts.jsx's matching fix for
+        // the full explanation of the underlying client.js behavior.
         const [crimeTypes, warnings, financial] = await Promise.all([
-          api.get("/analytics/crime-types", token),
-          api.get("/scoring/early-warnings", token),
-          api.get("/financial/summary", token),
+          api.get("/analytics/crime-types", token, { timeoutMs: 15000 }),
+          api.get("/scoring/early-warnings", token, { timeoutMs: 15000 }),
+          api.get("/financial/summary", token, { timeoutMs: 15000 }),
         ]);
         const totalIncidents = crimeTypes.reduce((sum, c) => sum + c.count, 0);
         const spikeCount = warnings.filter((w) => w.is_spike).length;
@@ -76,7 +96,7 @@ export default function Home() {
           <h2>{t("home.quickActions")}</h2>
         </div>
         <div className="home-actions-grid">
-          {QUICK_ACTIONS.map((a) => {
+          {QUICK_ACTIONS.filter((a) => !a.allowedRoles || a.allowedRoles.includes(user?.role)).map((a) => {
             const content = (
               <>
                 <span className={`home-action-icon tone-${a.tone}`}><a.Icon width={20} height={20} /></span>

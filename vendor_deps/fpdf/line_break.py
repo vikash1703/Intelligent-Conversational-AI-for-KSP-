@@ -579,9 +579,10 @@ class CurrentLine:
         # character attributes. If the last existing fragment doesn't match
         # the properties of the pending character -> add a new fragment.
         elif isinstance(original_fragment, Fragment):
-            if isinstance(
-                self.fragments[-1], Fragment
-            ) and not original_fragment.has_same_style(self.fragments[-1]):
+            if isinstance(self.fragments[-1], Fragment) and not (
+                original_fragment.has_same_style(self.fragments[-1])
+                and url == self.fragments[-1].link
+            ):
                 self.fragments.append(
                     original_fragment.__class__(
                         characters="",
@@ -744,7 +745,11 @@ class MultiLineBreak:
         self.skip_leading_spaces = skip_leading_spaces
         self.fragment_index: int = 0
         self.character_index: int = 0
-        self.idx_last_forced_break: Optional[int] = None
+        # (fragment_index, character_index) of the last forced break. Both
+        # indices are needed: with heavily fragmented text (e.g. a fallback
+        # font alternating with the main font), consecutive lines can break at
+        # the same character index within *different* fragments (issue #1250).
+        self.idx_last_forced_break: Optional[Tuple[int, int]] = None
         self.first_line_indent = first_line_indent
         self._is_first_line = True
 
@@ -793,6 +798,11 @@ class MultiLineBreak:
         while self.fragment_index < len(self.fragments):
             current_fragment = self.fragments[self.fragment_index]
 
+            if self.character_index >= len(current_fragment.characters):
+                self.character_index = 0
+                self.fragment_index += 1
+                continue
+
             if FloatTolerance.greater_than(
                 current_fragment.font_size, current_font_height
             ):
@@ -804,11 +814,6 @@ class MultiLineBreak:
                 if self._is_first_line:
                     max_width -= self.first_line_indent
 
-            if self.character_index >= len(current_fragment.characters):
-                self.character_index = 0
-                self.fragment_index += 1
-                continue
-
             character = current_fragment.characters[self.character_index]
             character_width = current_fragment.get_character_width(
                 character, self.print_sh, initial_cs=not first_char
@@ -817,8 +822,13 @@ class MultiLineBreak:
 
             if character in (NEWLINE, FORM_FEED):
                 self.character_index += 1
-                if not current_line.fragments:
-                    current_line.height = current_font_height * self.line_height
+                # The fragment carrying the line break may request a larger
+                # height than the text it terminates (this is how
+                # Paragraph.ln(h) passes on a custom height), and that height
+                # belongs to this line rather than to the following one.
+                current_line.height = max(
+                    current_line.height, current_font_height * self.line_height
+                )
                 self._is_first_line = False
                 return current_line.manual_break(
                     Align.L if self.align == Align.J else self.align,
@@ -847,11 +857,17 @@ class MultiLineBreak:
                     ) = current_line.automatic_break(self.align)
                     self.character_index += 1
                     return line
-                if idx_last_forced_break == self.character_index:
+                if idx_last_forced_break == (
+                    self.fragment_index,
+                    self.character_index,
+                ):
                     raise FPDFException(
                         "Not enough horizontal space to render a single character"
                     )
-                self.idx_last_forced_break = self.character_index
+                self.idx_last_forced_break = (
+                    self.fragment_index,
+                    self.character_index,
+                )
                 return current_line.manual_break(
                     Align.L if self.align == Align.J else self.align,
                 )

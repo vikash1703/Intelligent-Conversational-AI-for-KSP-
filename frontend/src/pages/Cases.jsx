@@ -2,13 +2,13 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
+import { useTray } from "../context/TrayContext";
 import { api, ApiError } from "../api/client";
-import { DownloadIcon } from "../components/icons";
-import { genderLabel, actSectionLabel, dedupeActSections, caseStatusLabel } from "../utils/lookups";
+import { DownloadIcon, ThumbtackIcon, EditIcon } from "../components/icons";
+import { genderLabel, actSectionLabel, dedupeActSections, caseStatusLabel, crimeTypeFromBriefFacts } from "../utils/lookups";
 import "./Cases.css";
 
 const CSTYPE_LABEL = { A: "Chargesheet", B: "False Case", C: "Undetected" };
-const boolLabel = (v) => (v === true || v === "1" || v === 1 ? "Yes" : v === false || v === "0" || v === 0 ? "No" : "—");
 
 // ISO "YYYY-MM-DD..." string -> whole days between two date-ish strings
 // (b - a), or null if either is missing/unparsable — used by both the
@@ -76,11 +76,15 @@ function buildTimeline(detail) {
   for (const a of detail.arrests || []) {
     if (!a.ArrestSurrenderDate) continue;
     const flags = [];
-    let text = `Accused ID ${a.AccusedMasterID ?? "—"}.`;
+    // Real resolved name (see RECORD_SHAPE.arrests' matching 2026-08-24 note)
+    // — falls back to the raw id only on the rare row where the join itself
+    // found no matching Accused record, never as the default.
+    const who = a.AccusedName || (a.AccusedMasterID ? `Unresolved ID ${a.AccusedMasterID}` : "Unknown accused");
+    let text = `${who}.`;
     const predates = firDate ? daysBetween(a.ArrestSurrenderDate, firDate) : null;
     if (predates !== null && predates > 0) {
       flags.push("predates_fir");
-      text = `Accused ID ${a.AccusedMasterID ?? "—"} — recorded ${predates} days before the FIR was registered (possible source data issue).`;
+      text = `${who} — recorded ${predates} days before the FIR was registered (possible source data issue).`;
     }
     events.push({
       stage: "arrest",
@@ -110,7 +114,13 @@ function buildTimeline(detail) {
     stage: "current_status",
     date: null,
     label: "Current Status",
-    detail: caseStatusLabel(detail.CaseStatusID),
+    // Backend-resolved CaseStatusName (added 2026-08-24, status-contradiction
+    // investigation) — the same live services.timeline_service.
+    // get_case_status_labels() the standalone /timeline endpoint and chat
+    // already use, so this can no longer drift from them. caseStatusLabel()
+    // (this file's own hardcoded mirror) is now only a fallback for the rare
+    // response shape that predates this field.
+    detail: detail.CaseStatusName || caseStatusLabel(detail.CaseStatusID),
     flags: [],
   });
 
@@ -208,15 +218,26 @@ function CaseTimeline({ detail }) {
 const RECORD_SHAPE = {
   victims: (v) => ({
     title: v.VictimName || `Victim ${v.VictimMasterID}`,
+    // "Police victim" field removed 2026-08-24 (pre-Item-8 fix, A1-class audit
+    // follow-up) — VictimPolice was a dead constant, live-verified '0' on
+    // 3416/3416 real rows, always rendering "Police victim: No" with zero
+    // actual information behind it.
     fields: [
       { label: "Age", value: v.AgeYear ?? "—" },
       { label: "Gender", value: genderLabel(v.GenderID) },
-      { label: "Police victim", value: boolLabel(v.VictimPolice) },
     ],
   }),
-  accused: (a) => ({
+  accused: (a, ctx) => ({
     title: a.AccusedName || `Accused ${a.AccusedMasterID}`,
-    subtitle: a.PersonID,
+    // Computed from this accused's real position in the case's own accused
+    // list, NOT Accused.PersonID — live-verified 2026-08-24 that PersonID is
+    // broken source data: only 2 distinct values exist across all 3,915 real
+    // Accused rows ("A1": 3000, "A2": 915), uncorrelated with actual per-case
+    // position (260 of 1,042 single-accused cases show "A2" with no "A1" at
+    // all; most multi-accused cases show duplicates like A1/A1 or A1/A1/A1
+    // instead of a real sequence). Not a code bug to trace — the source
+    // column itself doesn't encode what its name implies.
+    subtitle: `A${(ctx?.index ?? 0) + 1}`,
     fields: [
       { label: "Age", value: a.AgeYear ?? "—" },
       { label: "Gender", value: genderLabel(a.GenderID) },
@@ -224,12 +245,13 @@ const RECORD_SHAPE = {
   }),
   complainants: (c) => ({
     title: c.ComplainantName || `Complainant ${c.ComplainantID}`,
+    // Occupation/Religion/Caste ID fields removed 2026-08-24 (pre-Item-8 fix,
+    // A1-class audit follow-up) — all three are 100% NULL across all 3,000
+    // real ComplainantDetails rows, live-verified; every card always rendered
+    // three permanently-empty "—" rows with no real data behind any of them.
     fields: [
       { label: "Age", value: c.AgeYear ?? "—" },
       { label: "Gender", value: genderLabel(c.GenderID) },
-      { label: "Occupation ID", value: c.OccupationID ?? "—" },
-      { label: "Religion ID", value: c.ReligionID ?? "—" },
-      { label: "Caste ID", value: c.CasteID ?? "—" },
     ],
   }),
   arrests: (a, ctx) => {
@@ -248,11 +270,28 @@ const RECORD_SHAPE = {
       warning: daysBeforeFir !== null && daysBeforeFir > 0
         ? "Date predates FIR — possible source data issue"
         : null,
+      // "Accused ID" (raw ArrestSurrender.AccusedMasterID) replaced with the
+      // real resolved name 2026-08-24 (pre-Item-8 fix) — that column actually
+      // stores a real Accused.ROWID (same "column name doesn't match what it
+      // stores" quirk network_service.py's _MAX_PLAUSIBLE_ACCUSED_ID comment
+      // already documents for CriminalNetwork.accused_id), joinable to a real
+      // name; services/db_service.get_case_full now resolves it server-side
+      // into AccusedName. "Is accused"/"Complainant is accused" fields
+      // removed in the same pass — both dead constants (live-verified '1'
+      // and '0' respectively on all 1,500 real rows).
+      // Custody lifecycle fields added 2026-08-25 (Tier 1 item 9) — SIMULATED
+      // (see the permanent banner rendered above this section) except
+      // "Date" and "Accused", which are real. next_hearing_date only shows
+      // for a Pending record (see services/custody_service.
+      // simulated_next_hearing_date — a Granted/Denied case has none).
       fields: [
         { label: "Date", value: a.ArrestSurrenderDate || "—" },
-        { label: "Accused ID", value: a.AccusedMasterID ?? "—" },
-        { label: "Is accused", value: boolLabel(a.IsAccused) },
-        { label: "Complainant is accused", value: boolLabel(a.IsComplainantAccused) },
+        { label: "Accused", value: a.AccusedName || (a.AccusedMasterID ? `Unresolved ID ${a.AccusedMasterID}` : "—") },
+        { label: "Custody type", value: a.custody_type || "—" },
+        { label: "Bail status", value: a.bail_status || "—" },
+        ...(a.bail_amount != null ? [{ label: "Bail amount", value: `₹${Number(a.bail_amount).toLocaleString()}` }] : []),
+        ...(a.release_date ? [{ label: "Release date", value: a.release_date }] : []),
+        ...(a.next_hearing_date ? [{ label: "Next hearing", value: a.next_hearing_date }] : []),
       ],
     };
   },
@@ -274,12 +313,34 @@ export default function Cases() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
+  const { isPinned, addToTray, removeFromTray, isFull } = useTray();
   const [cases, setCases] = useState([]);
   const [loadingCases, setLoadingCases] = useState(false);
   const [detail, setDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [error, setError] = useState("");
   const [activeFilter, setActiveFilter] = useState(null);
+
+  // Real distinct filter values (crime types / statuses / in-scope stations)
+  // — fetched once from GET /cases/filter-options, never hardcoded/guessed
+  // (see services/db_service.get_case_filter_options). null until loaded.
+  const [filterOptions, setFilterOptions] = useState(null);
+  // The filter FORM's own draft state — separate from activeFilter (what's
+  // actually been searched for), same pattern HotspotMap.jsx already uses,
+  // so typing in a field doesn't re-fetch until Apply is pressed.
+  const [fCrimeType, setFCrimeType] = useState("");
+  const [fStatusId, setFStatusId] = useState("");
+  const [fStationId, setFStationId] = useState("");
+  const [fFromDate, setFFromDate] = useState("");
+  const [fToDate, setFToDate] = useState("");
+  const [crimeNoQuery, setCrimeNoQuery] = useState("");
+
+  // Real total for the CURRENT filter (GET /cases/search/count) — null while
+  // unknown/loading, so "Showing X of Y" never briefly shows a stale number
+  // for a different filter. PAGE_SIZE matches search_cases' own default.
+  const [totalCount, setTotalCount] = useState(null);
+  const [offset, setOffset] = useState(0);
+  const PAGE_SIZE = 25;
 
   const [accusedName, setAccusedName] = useState("");
   const [accusedHistory, setAccusedHistory] = useState(null);
@@ -289,6 +350,12 @@ export default function Cases() {
   const [reportContent, setReportContent] = useState("");
   const [exportingReport, setExportingReport] = useState(false);
   const [exportError, setExportError] = useState("");
+
+  const [chargesheetDraft, setChargesheetDraft] = useState(null);
+  const [generatingDraft, setGeneratingDraft] = useState(false);
+  const [draftError, setDraftError] = useState("");
+  const [downloadingDraftPdf, setDownloadingDraftPdf] = useState(false);
+  const [draftCopied, setDraftCopied] = useState(false);
 
   // Fetched once — the same IPC section KB that answers chat's
   // LEGAL_REFERENCE questions (services/legal_kb_service.py), keyed by
@@ -304,7 +371,12 @@ export default function Cases() {
   const [expandedSection, setExpandedSection] = useState(null);
 
   useEffect(() => {
-    api.get("/legal/ipc-sections", token)
+    // timeoutMs added 2026-08-24 (codebase-wide timeout audit) — both calls
+    // below were already non-fatal on error, but with no timeout a genuine
+    // stall meant "loading forever" rather than "gave up and moved on",
+    // silently leaving act-section names/filter dropdowns unavailable for
+    // the rest of the session instead of retrying-worthy failed state.
+    api.get("/legal/ipc-sections", token, { timeoutMs: 15000 })
       .then((sections) => {
         setIpcSectionMap(Object.fromEntries(sections.map((s) => [s.section_no.toUpperCase(), s])));
       })
@@ -313,8 +385,54 @@ export default function Cases() {
         // until this loads/retries, same as any other reference lookup that
         // isn't yet available.
       });
+    api.get("/cases/filter-options", token, { timeoutMs: 15000 })
+      .then(setFilterOptions)
+      .catch(() => {
+        // Non-fatal — the filter panel just shows empty dropdowns until this
+        // loads/retries; the list itself and its existing deep-link filters
+        // still work fine without it.
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // A station's real district, resolved from the already-fetched
+  // filter-options list — no extra backend call needed (see
+  // services/db_service.get_case_filter_options, which already attaches
+  // district to each station).
+  function districtForStation(stationId) {
+    return filterOptions?.stations?.find((s) => s.id === stationId)?.district || null;
+  }
+  function stationName(stationId) {
+    return filterOptions?.stations?.find((s) => s.id === stationId)?.name || null;
+  }
+
+  function applyFilters(e) {
+    e?.preventDefault();
+    loadCases({
+      crimeType: fCrimeType || undefined,
+      statusId: fStatusId || undefined,
+      stationId: fStationId || undefined,
+      fromDate: fFromDate || undefined,
+      toDate: fToDate || undefined,
+    });
+  }
+
+  function clearOwnFilters() {
+    setFCrimeType(""); setFStatusId(""); setFStationId(""); setFFromDate(""); setFToDate("");
+    loadCases();
+  }
+
+  const ownFiltersActive = Boolean(fCrimeType || fStatusId || fStationId || fFromDate || fToDate);
+
+  function handleCrimeNoSearch(e) {
+    e.preventDefault();
+    const q = crimeNoQuery.trim();
+    if (!q) return;
+    // openCase already catches its own errors into the shared `error` state
+    // (e.g. the backend's real "No case found for crime number '...'"
+    // message on a 404) — no separate error state needed here.
+    openCase(q);
+  }
 
   // Clicking an act-section card either expands the KB explanation inline
   // (IPC sections already in data/legal_kb/ipc_sections.json) or, when this
@@ -346,14 +464,30 @@ export default function Cases() {
     return false;
   }
 
-  async function loadCases(filter) {
+  // filter's shape covers two distinct sources: cross-page deep-links
+  // (crimeType/fromDate/toDate/monthOfYear/victimAgeBand/victimGenderId,
+  // unchanged from before — Analytics/Alerts/Network/Insights still drive
+  // these via router state) and this page's OWN new filter form
+  // (statusId/stationId, plus reusing crimeType/fromDate/toDate). newOffset
+  // defaults to 0 (any new search/filter starts back at page 1) — pagination
+  // buttons pass the current offset explicitly instead.
+  async function loadCases(filter, newOffset = 0) {
     setLoadingCases(true);
     setError("");
+    setOffset(newOffset);
+    // monthOfYear/victimAgeBand/victimGenderId page through the full table
+    // server-side (see services/db_service.search_cases) rather than a
+    // COUNT-able WHERE clause — search_cases_count doesn't support them, so
+    // "Showing X of Y" honestly shows just the page size for these, not a
+    // fabricated total.
+    const isUncountableFilter = Boolean(filter?.monthOfYear || filter?.victimAgeBand || filter?.victimGenderId != null);
     try {
-      const params = new URLSearchParams({ limit: "25" });
+      const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(newOffset) });
       if (filter?.crimeType) params.set("crime_type", filter.crimeType);
       if (filter?.fromDate) params.set("from_date", filter.fromDate);
       if (filter?.toDate) params.set("to_date", filter.toDate);
+      if (filter?.statusId) params.set("case_status_id", filter.statusId);
+      if (filter?.stationId) params.set("police_station_id", filter.stationId);
       // monthOfYear (Analytics' seasonal chart — "January across every
       // year") and victimAgeBand/victimGenderId (Analytics' victim
       // demographics chart) are mutually exclusive with the filters above at
@@ -364,8 +498,26 @@ export default function Cases() {
       if (filter?.victimGenderId !== undefined && filter?.victimGenderId !== null) {
         params.set("victim_gender_id", String(filter.victimGenderId));
       }
-      const data = await api.get(`/cases/search?${params.toString()}`, token);
+      // Analytics' new Case Outcome Flow (Sankey) — a stage-1 segment click
+      // passes crimeType+statusId (both already-supported params above), a
+      // stage-2 click passes statusId+chargesheetOutcome. Unlike monthOfYear/
+      // victimAgeBand/victimGenderId, this one IS countable server-side (see
+      // services/db_service.search_cases_count_by_chargesheet_outcome), so it
+      // deliberately isn't added to isUncountableFilter below.
+      if (filter?.chargesheetOutcome) params.set("chargesheet_outcome", filter.chargesheetOutcome);
+      const countParams = new URLSearchParams(params);
+      countParams.delete("limit");
+      countParams.delete("offset");
+      // timeoutMs added 2026-08-24 (codebase-wide timeout audit) — this is
+      // the Cases page's own list, loaded on mount and on every filter/page
+      // change; a stall here previously left setLoadingCases(false) never
+      // called, an indefinite spinner over the whole list.
+      const [data, countResult] = await Promise.all([
+        api.get(`/cases/search?${params.toString()}`, token, { timeoutMs: 15000 }),
+        isUncountableFilter ? Promise.resolve(null) : api.get(`/cases/search/count?${countParams.toString()}`, token, { timeoutMs: 15000 }),
+      ]);
       setCases(data);
+      setTotalCount(countResult ? countResult.total : null);
       setActiveFilter(filter || null);
     } catch (err) {
       if (handleAuthExpiry(err)) return;
@@ -375,6 +527,10 @@ export default function Cases() {
     }
   }
 
+  function goToPage(direction) {
+    loadCases(activeFilter, Math.max(0, offset + direction * PAGE_SIZE));
+  }
+
   // True when a router-state filter actually narrows the list (as opposed to
   // e.g. just a bare crimeNo, which only opens one case's detail panel below
   // and shouldn't itself trigger a filtered list load/banner).
@@ -382,7 +538,8 @@ export default function Cases() {
     return Boolean(
       filter?.crimeType || filter?.fromDate || filter?.toDate ||
       filter?.monthOfYear || filter?.victimAgeBand ||
-      (filter?.victimGenderId !== undefined && filter?.victimGenderId !== null)
+      (filter?.victimGenderId !== undefined && filter?.victimGenderId !== null) ||
+      filter?.statusId || filter?.chargesheetOutcome
     );
   }
 
@@ -395,7 +552,16 @@ export default function Cases() {
   useEffect(() => {
     const filter = location.state;
     if (filter?.crimeNo) {
+      // Pre-fill the search box too, not just open the detail panel — same
+      // as if the officer had typed the crime number in themselves (matters
+      // for arrivals from Data Quality's drilldown and Custody Registry's
+      // case links, both of which land here with only a crimeNo).
+      setCrimeNoQuery(filter.crimeNo);
       openCase(filter.crimeNo);
+    }
+    if (filter?.accusedName) {
+      setAccusedName(filter.accusedName);
+      runAccusedSearch(filter.accusedName);
     }
     loadCases(hasListFilter(filter) ? filter : undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -411,8 +577,15 @@ export default function Cases() {
     setError("");
     setShowExportForm(false);
     setExportError("");
+    setChargesheetDraft(null);
+    setDraftError("");
+    setDraftCopied(false);
     try {
-      const data = await api.get(`/cases/${encodeURIComponent(crimeNo)}`, token);
+      // timeoutMs added 2026-08-24 (codebase-wide timeout audit) — fires on
+      // mount too (a crimeNo deep-link from Analytics/Alerts/Network/
+      // Insights), not just a list-item click, so this is on-load for those
+      // arrival paths.
+      const data = await api.get(`/cases/${encodeURIComponent(crimeNo)}`, token, { timeoutMs: 15000 });
       setDetail(data);
     } catch (err) {
       if (handleAuthExpiry(err)) return;
@@ -463,18 +636,76 @@ export default function Cases() {
     }
   }
 
-  async function searchAccused(e) {
-    e.preventDefault();
-    if (!accusedName.trim()) return;
+  async function handleGenerateChargesheetDraft() {
+    if (!detail) return;
+    setGeneratingDraft(true);
+    setDraftError("");
+    setDraftCopied(false);
+    try {
+      const data = await api.post(`/cases/${encodeURIComponent(detail.CrimeNo)}/chargesheet-draft`, {}, token, { timeoutMs: 30000 });
+      setChargesheetDraft(data);
+    } catch (err) {
+      if (handleAuthExpiry(err)) return;
+      setDraftError(err instanceof ApiError ? err.message : "Could not generate the chargesheet draft.");
+    } finally {
+      setGeneratingDraft(false);
+    }
+  }
+
+  async function handleDownloadChargesheetPdf() {
+    if (!detail || !chargesheetDraft) return;
+    setDownloadingDraftPdf(true);
+    try {
+      const blob = await api.post(
+        `/cases/${encodeURIComponent(detail.CrimeNo)}/chargesheet-draft/pdf`,
+        { draft_text: chargesheetDraft.draft_text },
+        token,
+      );
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Chargesheet_Draft_${detail.CrimeNo}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      if (handleAuthExpiry(err)) return;
+      setDraftError(err instanceof ApiError ? err.message : "Could not download the PDF.");
+    } finally {
+      setDownloadingDraftPdf(false);
+    }
+  }
+
+  async function handleCopyChargesheetDraft() {
+    if (!chargesheetDraft) return;
+    try {
+      await navigator.clipboard.writeText(chargesheetDraft.draft_text);
+      setDraftCopied(true);
+      setTimeout(() => setDraftCopied(false), 2000);
+    } catch {
+      // Clipboard permission denied or unavailable — non-fatal, the officer
+      // can still select-and-copy the visible preview text manually.
+    }
+  }
+
+  async function runAccusedSearch(name) {
+    const q = (name ?? "").trim();
+    if (!q) return;
     setAccusedHistory(null);
     setAccusedError("");
     try {
-      const data = await api.get(`/cases/accused/history?name=${encodeURIComponent(accusedName.trim())}`, token);
+      const data = await api.get(`/cases/accused/history?name=${encodeURIComponent(q)}`, token);
       setAccusedHistory(data);
     } catch (err) {
       if (handleAuthExpiry(err)) return;
       setAccusedError(err.message || "No match found");
     }
+  }
+
+  function searchAccused(e) {
+    e.preventDefault();
+    runAccusedSearch(accusedName);
   }
 
   return (
@@ -483,26 +714,123 @@ export default function Cases() {
         <div className="cases-panel">
           <div className="cases-panel-head">
             <h2>{t("cases.title")}</h2>
-            <button onClick={() => loadCases()} disabled={loadingCases}>{loadingCases ? t("cases.loading") : t("cases.refresh")}</button>
+            <div className="cases-panel-head-actions">
+              {["Inspector", "SP", "Admin"].includes(user?.role) && (
+                <button type="button" className="cases-new-fir-btn" onClick={() => navigate("/fir/register")}>
+                  + {t("cases.newFir")}
+                </button>
+              )}
+              <button onClick={() => loadCases(activeFilter, offset)} disabled={loadingCases}>{loadingCases ? t("cases.loading") : t("cases.refresh")}</button>
+            </div>
           </div>
-          {(activeFilter?.crimeType || activeFilter?.filterLabel) && (
+
+          <form className="cases-crimeno-search" onSubmit={handleCrimeNoSearch}>
+            <input
+              placeholder={t("cases.crimeNoPlaceholder")}
+              value={crimeNoQuery}
+              onChange={(e) => setCrimeNoQuery(e.target.value)}
+            />
+            <button type="submit">{t("cases.search")}</button>
+          </form>
+
+          <form className="cases-filter-form" onSubmit={applyFilters}>
+            <select value={fCrimeType} onChange={(e) => setFCrimeType(e.target.value)} aria-label={t("cases.filterCrimeType")}>
+              <option value="">{t("cases.filterCrimeType")}</option>
+              {(filterOptions?.crime_types || []).map((ct) => <option key={ct} value={ct}>{ct}</option>)}
+            </select>
+            <select value={fStatusId} onChange={(e) => setFStatusId(e.target.value)} aria-label={t("cases.filterStatus")}>
+              <option value="">{t("cases.filterStatus")}</option>
+              {(filterOptions?.statuses || []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+            <select value={fStationId} onChange={(e) => setFStationId(e.target.value)} aria-label={t("cases.filterStation")}>
+              <option value="">{t("cases.filterStation")}</option>
+              {(filterOptions?.stations || []).map((s) => (
+                <option key={s.id} value={s.id}>{s.district ? `${s.name} (${s.district})` : s.name}</option>
+              ))}
+            </select>
+            <label className="cases-filter-date">
+              {t("cases.fromDate")}
+              <input type="date" value={fFromDate} onChange={(e) => setFFromDate(e.target.value)} />
+            </label>
+            <label className="cases-filter-date">
+              {t("cases.toDate")}
+              <input type="date" value={fToDate} onChange={(e) => setFToDate(e.target.value)} />
+            </label>
+            <button type="submit">{t("cases.applyFilters")}</button>
+            {ownFiltersActive && <button type="button" className="cases-clear-filters" onClick={clearOwnFilters}>{t("cases.clear")}</button>}
+          </form>
+
+          {(activeFilter?.crimeType || activeFilter?.filterLabel) && !ownFiltersActive && (
             <div className="cases-filter-banner">
               {t("cases.filtered")} <b>{activeFilter.crimeType || activeFilter.filterLabel}</b>
               {activeFilter.fromDate && !activeFilter.filterLabel && <> · {t("cases.since")} {activeFilter.fromDate}</>}
               <button type="button" onClick={clearFilter}>{t("cases.clear")}</button>
             </div>
           )}
+
+          <div className="cases-count-line">
+            {loadingCases
+              ? t("cases.loading")
+              : totalCount !== null
+                ? `${t("cases.showing")} ${offset + 1}–${offset + cases.length} ${t("cases.of")} ${totalCount.toLocaleString()}`
+                : `${t("cases.showing")} ${cases.length}`}
+          </div>
+
           {error && <p className="cases-error">{error}</p>}
           <div className="cases-list">
-            {cases.map((c) => (
-              <button key={c.CrimeNo} className="cases-list-item" onClick={() => openCase(c.CrimeNo)}>
-                <span className="cases-list-crimeno">{c.CrimeNo}</span>
-                <span className="cases-list-date">{c.CrimeRegisteredDate}</span>
-                <span className="cases-list-facts">{c.BriefFacts}</span>
-              </button>
-            ))}
+            {cases.map((c) => {
+              const crimeType = crimeTypeFromBriefFacts(c.BriefFacts);
+              const station = stationName(c.PoliceStationID);
+              const district = districtForStation(c.PoliceStationID);
+              return (
+                <div
+                  key={c.CrimeNo}
+                  className="cases-list-item"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => openCase(c.CrimeNo)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openCase(c.CrimeNo); } }}
+                >
+                  <div className="cases-list-item-head">
+                    <span className="cases-list-crimeno">{c.CrimeNo}</span>
+                    <span className="cases-list-date">{c.CrimeRegisteredDate}</span>
+                    <button
+                      type="button"
+                      className={`cases-tray-btn${isPinned(c.CrimeNo) ? " cases-tray-btn-active" : ""}`}
+                      onClick={(e) => { e.stopPropagation(); isPinned(c.CrimeNo) ? removeFromTray(c.CrimeNo) : addToTray(c.CrimeNo); }}
+                      disabled={!isPinned(c.CrimeNo) && isFull}
+                      title={isPinned(c.CrimeNo) ? t("tray.removeFromTray") : t("tray.addToTray")}
+                    >
+                      <ThumbtackIcon width={13} height={13} />
+                    </button>
+                  </div>
+                  <div className="cases-list-item-badges">
+                    <span className="cases-list-badge">{crimeType}</span>
+                    <span className="cases-list-badge cases-list-badge-status">{c.CaseStatusName || caseStatusLabel(c.CaseStatusID)}</span>
+                    {station && (
+                      <span className="cases-list-badge cases-list-badge-station">
+                        {station}{district ? ` · ${district}` : ""}
+                      </span>
+                    )}
+                  </div>
+                  <span className="cases-list-facts">{c.BriefFacts}</span>
+                </div>
+              );
+            })}
             {cases.length === 0 && !loadingCases && <p className="cases-empty">{t("cases.noMatches")}</p>}
           </div>
+
+          {totalCount !== null && totalCount > PAGE_SIZE && (
+            <div className="cases-pagination">
+              <button type="button" onClick={() => goToPage(-1)} disabled={loadingCases || offset === 0}>
+                {t("cases.previous")}
+              </button>
+              <span>{Math.floor(offset / PAGE_SIZE) + 1} / {Math.ceil(totalCount / PAGE_SIZE)}</span>
+              <button type="button" onClick={() => goToPage(1)} disabled={loadingCases || offset + PAGE_SIZE >= totalCount}>
+                {t("cases.next")}
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="cases-panel">
@@ -544,9 +872,22 @@ export default function Cases() {
           <div className="cases-detail-card">
             <div className="cases-detail-head">
               <h2>{detail.CrimeNo}</h2>
+              <button
+                type="button"
+                className={`cases-export-toggle${isPinned(detail.CrimeNo) ? " cases-tray-btn-active" : ""}`}
+                onClick={() => (isPinned(detail.CrimeNo) ? removeFromTray(detail.CrimeNo) : addToTray(detail.CrimeNo))}
+                disabled={!isPinned(detail.CrimeNo) && isFull}
+              >
+                <ThumbtackIcon width={13} height={13} /> {isPinned(detail.CrimeNo) ? t("tray.removeFromTray") : t("tray.addToTray")}
+              </button>
               <button type="button" className="cases-export-toggle" onClick={toggleExportForm}>
                 <DownloadIcon width={13} height={13} /> Export Report
               </button>
+              {["Inspector", "SP", "Admin"].includes(user?.role) && (
+                <button type="button" className="cases-export-toggle" onClick={() => navigate(`/fir/edit/${encodeURIComponent(detail.CrimeNo)}`)}>
+                  <EditIcon width={13} height={13} /> {t("fir.editFir")}
+                </button>
+              )}
             </div>
             {showExportForm && (
               <form className="cases-export-form" onSubmit={handleExportReport}>
@@ -593,11 +934,15 @@ export default function Cases() {
               return (
                 <div className="cases-detail-section" key={key}>
                   <h3>{t(`cases.${tKey}`)} ({records?.length ?? 0})</h3>
+                  {key === "arrests" && records?.length > 0 && (
+                    <p className="cases-custody-banner">⚠ {t("cases.custodySimulatedNote")}</p>
+                  )}
                   {records?.length > 0 ? (
                     <div className="rec-grid">
                       {records.map((row, i) => {
                         const ctx = key === "arrests" ? { registeredDate: detail.CrimeRegisteredDate }
                           : key === "act_sections" ? { ipcSectionMap }
+                          : key === "accused" ? { index: i }
                           : undefined;
                         const shape = RECORD_SHAPE[key](row, ctx);
                         const isActSection = key === "act_sections";
@@ -658,6 +1003,57 @@ export default function Cases() {
                 </div>
               );
             })}
+
+            {["Inspector", "SP"].includes(user?.role) &&
+              (detail.accused?.length > 0) &&
+              (detail.act_sections || []).some((s) => s.SectionCode) &&
+              detail.CaseStatusName !== "Charge Sheeted" && (
+              <div className="cases-detail-section cases-chargesheet-draft">
+                <h3>📄 Chargesheet Draft</h3>
+                <p className="cases-chargesheet-draft-lede">
+                  Auto-generate a draft from case data. Review carefully before official use.
+                </p>
+
+                {!chargesheetDraft && (
+                  <button
+                    type="button"
+                    className="cases-chargesheet-draft-generate"
+                    onClick={handleGenerateChargesheetDraft}
+                    disabled={generatingDraft}
+                  >
+                    {generatingDraft ? "Generating draft…" : "Generate Draft"}
+                  </button>
+                )}
+                {draftError && <p className="cases-error">{draftError}</p>}
+
+                {chargesheetDraft && (
+                  <>
+                    <p className="cases-chargesheet-draft-disclaimer">
+                      This is an AI-generated draft based on recorded case data. It must be reviewed,
+                      verified, and approved by the Investigating Officer before submission.
+                      AI-generated content is not a substitute for legal review.
+                    </p>
+                    <pre className="cases-chargesheet-draft-preview">{chargesheetDraft.draft_text}</pre>
+                    <div className="cases-chargesheet-draft-actions">
+                      <button type="button" onClick={handleCopyChargesheetDraft}>
+                        {draftCopied ? "Copied!" : "Copy text"}
+                      </button>
+                      <button type="button" onClick={handleDownloadChargesheetPdf} disabled={downloadingDraftPdf}>
+                        <DownloadIcon width={13} height={13} /> {downloadingDraftPdf ? "Downloading…" : "Download PDF"}
+                      </button>
+                      <button
+                        type="button"
+                        className="cases-chargesheet-draft-regenerate"
+                        onClick={handleGenerateChargesheetDraft}
+                        disabled={generatingDraft}
+                      >
+                        {generatingDraft ? "Generating draft…" : "Regenerate"}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>

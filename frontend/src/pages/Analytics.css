@@ -112,6 +112,21 @@
   margin: 8px 0 0;
 }
 
+.an-outcome-card {
+  max-width: 1200px;
+  margin-bottom: 16px;
+}
+
+.an-outcome-note {
+  margin: 0 0 8px;
+  padding: 7px 10px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--warn);
+  background: var(--warn-bg);
+  border-radius: 6px;
+}
+
 .an-row-spike {
   background: var(--crit-bg);
 }

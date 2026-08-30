@@ -4,6 +4,7 @@ import { ResponsiveContainer, LineChart, Line } from "recharts";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { api, ApiError } from "../api/client";
+import { scopeBreadcrumb } from "../utils/lookups";
 import "./Alerts.css";
 
 // Four tiers replacing the old binary SPIKE/Normal badge — pure function of
@@ -48,7 +49,7 @@ function Sparkline({ data }) {
 }
 
 export default function Alerts() {
-  const { token, logout } = useAuth();
+  const { token, user, logout } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
@@ -72,7 +73,11 @@ export default function Alerts() {
   }
 
   useEffect(() => {
-    api.get("/scoring/early-warnings", token)
+    // REAL BUG FIXED 2026-08-24 (codebase-wide timeout audit): this page's
+    // OWN initial load had the same missing-timeout gap as the districts
+    // call below it (already fixed) — a stall here left the whole page on
+    // "Loading…" forever.
+    api.get("/scoring/early-warnings", token, { timeoutMs: 15000 })
       .then((data) => {
         setWarnings(data);
         setLoading(false);
@@ -104,7 +109,15 @@ export default function Alerts() {
 
     setDistricts((prev) => ({ ...prev, [w.crime_type]: "loading" }));
     const params = new URLSearchParams({ crime_type: w.crime_type, recent_days: String(w.window_days) });
-    api.get(`/scoring/early-warnings/districts?${params.toString()}`, token)
+    // REAL BUG FIXED 2026-08-24: this call had no timeoutMs, and api.get()
+    // only aborts on an explicit one (see client.js) — a genuine network
+    // stall or slow backend response left this "loading" forever with no
+    // error ever surfacing, since a Promise that never settles never reaches
+    // either .then or .catch. This endpoint does a real ~2.6-2.8s uncached
+    // full-table scan per call (services/scoring_service.get_alert_top_
+    // districts, now @ttl_cached — see that function), so 15s gives real
+    // headroom above the normal case while still surfacing a genuine stall.
+    api.get(`/scoring/early-warnings/districts?${params.toString()}`, token, { timeoutMs: 15000 })
       .then((data) => setDistricts((prev) => ({ ...prev, [w.crime_type]: data })))
       .catch((err) => {
         if (handleAuthExpiry(err)) return;
@@ -112,12 +125,36 @@ export default function Alerts() {
       });
   }
 
+  const jurisdictionLabel = scopeBreadcrumb(t, user);
+  const allDeclining = warnings.length > 0 && warnings.every((w) => tierFor(w.ratio).key === "declining");
+
   return (
     <div className="alerts-page">
       <h2>{t("alerts.title")}</h2>
       <p className="alerts-sub">{t("alerts.subtitle")}</p>
+      {jurisdictionLabel && (
+        <p className="alerts-jurisdiction">{t("alerts.showingFor")} <b>{jurisdictionLabel}</b></p>
+      )}
       {loading && <p className="alerts-note">{t("alerts.loading")}</p>}
       {error && <p className="alerts-error">{error}</p>}
+
+      {!loading && !error && allDeclining && (
+        <div className="alerts-all-clear">
+          <p>{t("alerts.allDecliningTitle")}</p>
+          <button
+            type="button"
+            className="alerts-ask-ai"
+            onClick={() => navigate("/chat", {
+              state: {
+                prefillQuestion: `What are the recent crime trends in ${jurisdictionLabel || "my jurisdiction"}? Are any crime types showing early warning signs I should know about?`,
+              },
+            })}
+          >
+            {t("alerts.askAiJurisdiction")} →
+          </button>
+        </div>
+      )}
+
       <div className="alerts-list">
         {warnings.map((w) => {
           const isOpen = expandedType === w.crime_type;

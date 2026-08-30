@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from schemas.auth_dto import CurrentUser
 from services.network_service import (
     get_network_for_accused,
@@ -14,8 +14,12 @@ router = APIRouter()
 
 
 @router.get("/organized-groups")
-def organized_groups(current_user: CurrentUser = Depends(require_permission("can_view_network"))):
-    return get_organized_crime_groups()
+def organized_groups(
+    limit: int | None = Query(None, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    current_user: CurrentUser = Depends(require_permission("can_view_network")),
+):
+    return get_organized_crime_groups(limit=limit, offset=offset)
 
 
 @router.get("/gang/{gang_name}/analysis")

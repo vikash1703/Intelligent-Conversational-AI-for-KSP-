@@ -42,7 +42,7 @@ def _days_between(a, b) -> int | None:
     return (db_ - da).days
 
 
-def get_case_timeline(crime_no: str) -> list[dict] | None:
+def get_case_timeline(crime_no: str, station_ids: list[int] | None = None) -> list[dict] | None:
     """Chronological investigation timeline assembled purely from existing
     CaseMaster/ArrestSurrender/ChargesheetDetails/CaseStatusMaster data — no
     new fields, no fabricated stages. Mirrors the client-side assembly Cases.jsx
@@ -50,8 +50,10 @@ def get_case_timeline(crime_no: str) -> list[dict] | None:
     the primary UI path (which already has this data loaded and doesn't need
     a second round trip) and this standalone endpoint agree on the same
     events from the same underlying facts. Returns None if the crime number
-    doesn't match any case."""
-    case = get_case_full(crime_no)
+    doesn't match any case — including a case that exists but is outside
+    station_ids (see get_case_full's docstring on why that's the same return
+    value as genuinely-nonexistent, not a separate error)."""
+    case = get_case_full(crime_no, station_ids=station_ids)
     if case is None:
         return None
 
