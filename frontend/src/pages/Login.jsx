@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage, LANGUAGES } from "../context/LanguageContext";
@@ -11,11 +11,18 @@ import "./Login.css";
 // DGP/IGP/SP/Inspector — Admin is a system-bypass construct, not a real rank, so it
 // deliberately has no card here). Test accounts and jurisdictions match the 5 real
 // AppUser rows verified live during the Tier 0 jurisdiction-locking work.
+//
+// No password field here (real bug fixed 2026-08-30): a card used to log
+// straight in on click, submitting a hardcoded password with no
+// authentication step at all — unprofessional for a police platform, and a
+// bad habit to demo. A card now only pre-fills the username and focuses the
+// password field; the officer still has to type the real password and hit
+// Sign In like any other login.
 const ROLE_ACCOUNTS = [
-  { code: "DGP", username: "DGPTEST", password: "1234", labelKey: "login.roleDGP", scopeKey: "login.roleDGPScope", tone: "login-role-badge-gold" },
-  { code: "IGP", username: "IGPTEST", password: "1234", labelKey: "login.roleIGP", scopeKey: "login.roleIGPScope", tone: "login-role-badge-info" },
-  { code: "SP", username: "SPTEST", password: "1234", labelKey: "login.roleSP", scopeKey: "login.roleSPScope", tone: "login-role-badge-purple" },
-  { code: "INS", username: "INSPECTORTEST", password: "1234", labelKey: "login.roleInspector", scopeKey: "login.roleInspectorScope", tone: "login-role-badge-warn" },
+  { code: "DGP", username: "DGPTEST", labelKey: "login.roleDGP", scopeKey: "login.roleDGPScope", tone: "login-role-badge-gold" },
+  { code: "IGP", username: "IGPTEST", labelKey: "login.roleIGP", scopeKey: "login.roleIGPScope", tone: "login-role-badge-info" },
+  { code: "SP", username: "SPTEST", labelKey: "login.roleSP", scopeKey: "login.roleSPScope", tone: "login-role-badge-purple" },
+  { code: "INS", username: "INSPECTORTEST", labelKey: "login.roleInspector", scopeKey: "login.roleInspectorScope", tone: "login-role-badge-warn" },
 ];
 
 export default function Login() {
@@ -26,11 +33,11 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [roleLoading, setRoleLoading] = useState(null);
   const [showDevToken, setShowDevToken] = useState(false);
   const [devToken, setDevToken] = useState("");
+  const passwordRef = useRef(null);
 
-  const busy = loading || roleLoading !== null;
+  const busy = loading;
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -46,17 +53,13 @@ export default function Login() {
     }
   }
 
-  async function handleRoleLogin(account) {
+  // Pre-fills the username and hands focus to the password field — never
+  // submits on its own. The officer still authenticates for real.
+  function handleRoleLogin(account) {
     setError("");
-    setRoleLoading(account.code);
-    try {
-      await login(account.username, account.password);
-      navigate(getStoredDefaultPage());
-    } catch (err) {
-      setError(err.message || "Login failed");
-    } finally {
-      setRoleLoading(null);
-    }
+    setUsername(account.username);
+    setPassword("");
+    passwordRef.current?.focus();
   }
 
   function handleDevToken(e) {
@@ -106,9 +109,7 @@ export default function Login() {
                 disabled={busy}
                 onClick={() => handleRoleLogin(account)}
               >
-                <span className={`login-role-badge ${account.tone}`}>
-                  {roleLoading === account.code ? "…" : account.code}
-                </span>
+                <span className={`login-role-badge ${account.tone}`}>{account.code}</span>
                 <span className="login-role-name" title={t(account.labelKey)}>{t(account.labelKey)}</span>
                 <span className="login-role-scope" title={t(account.scopeKey)}>{t(account.scopeKey)}</span>
               </button>
@@ -128,6 +129,7 @@ export default function Login() {
           <label>
             {t("login.password")}
             <input
+              ref={passwordRef}
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

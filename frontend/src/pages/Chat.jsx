@@ -8,6 +8,7 @@ import {
   CasesIcon, AnalyticsIcon, CopyIcon, ThumbsUpIcon, ThumbsDownIcon, RegenerateIcon,
   EditIcon, ChevronDownIcon, SearchIcon, StopIcon, ThumbtackIcon, SendIcon,
 } from "../components/icons";
+import KspLogo from "../components/KspLogo";
 import "./Chat.css";
 
 // Backend/RAG grounding is English-only (case data, uploaded documents), so any
@@ -1279,7 +1280,11 @@ export default function Chat() {
           {historyLoading && <p className="chat-history-loading">{t("cases.loadingCase")}</p>}
           {messages.length === 0 && !historyLoading && (
             <div className="chat-landing">
-              <div className="chat-empty-avatar"><ShieldIcon width={26} height={26} /></div>
+              {/* Real Karnataka State Police crest (2026-08-30 — this used
+                  to be a generic outline shield glyph) — same KspLogo the
+                  Login page and AppShell topbar already use, not a second,
+                  differently-styled badge. */}
+              <div className="chat-empty-avatar"><KspLogo size={40} /></div>
               <p className="chat-empty-title">{t("chat.emptyGreeting")}</p>
               <p className="chat-grounding-line">
                 {datasetSummary

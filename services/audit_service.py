@@ -345,3 +345,102 @@ def log_chat_query(
         )
     except Exception as e:
         logger.error(f"Failed to persist audit log: {str(e)}")
+
+
+# Every marker this file writes, mapped to the human event-type label the
+# Audit Logs page (added 2026-08-30 — until now this table was write-only,
+# with no UI or endpoint to ever read it back) groups rows by. A plain chat
+# Q&A row (log_chat_query) carries none of these prefixes at all — that's
+# the implicit "chat_query" fallback below, not a bug; it's the ORIGINAL,
+# oldest use of this table, predating every marker-prefixed event type.
+_EVENT_MARKERS = [
+    (_PROVIDER_EVENT_MARKER, "provider_event"),
+    (_INTENT_LOG_MARKER, "intent_classification"),
+    (_FEEDBACK_LOG_MARKER, "chat_feedback"),
+    (_LANGUAGE_PREF_MARKER, "language_preference"),
+    (_FIR_REGISTRATION_MARKER, "fir_registration"),
+    (_FIR_AMENDMENT_MARKER, "fir_amendment"),
+    (_CHARGESHEET_DRAFT_MARKER, "chargesheet_draft"),
+]
+AUDIT_EVENT_TYPES = [label for _, label in _EVENT_MARKERS] + ["chat_query"]
+
+
+def _parse_audit_row(row: dict) -> dict:
+    """One AuditLog row -> a display-ready dict — resolves which marker (if
+    any) response_text starts with into a real event_type, and JSON-decodes
+    the structured payload for it into `detail` (None for a plain chat_query
+    row, where response_text IS the answer, not a JSON payload)."""
+    response_text = row.get("response_text") or ""
+    event_type = "chat_query"
+    detail = None
+    for marker, label in _EVENT_MARKERS:
+        if response_text.startswith(marker):
+            event_type = label
+            try:
+                detail = json.loads(response_text[len(marker):])
+            except json.JSONDecodeError:
+                detail = None
+            break
+    return {
+        "id": row.get("ROWID"),
+        "user_id": row.get("user_id"),
+        "role_name": row.get("role_name"),
+        "session_id": row.get("session_id"),
+        "event_type": event_type,
+        "query_text": row.get("query_text"),
+        "response_text": response_text,
+        "detail": detail,
+        "ip_address": row.get("ip_address"),
+        "entry_timestamp": row.get("entry_timestamp"),
+    }
+
+
+def get_audit_logs(
+    limit: int = 100,
+    before: str | None = None,
+    user_id: str | None = None,
+    event_type: str | None = None,
+) -> list[dict]:
+    """Real, most-recent-first read of the AuditLog table for the Audit Logs
+    page — this table previously had no read path anywhere in the app at
+    all (write-only, verified: no endpoint, no page). A single bounded
+    `ORDER BY CREATEDTIME DESC LIMIT` query, same pattern
+    get_session_language_preference already uses — never offset pagination
+    (see fetch_all_rows' own docstring for the live-reproduced ZCQL bug that
+    makes offset pagination lose/duplicate rows on this codebase's tables).
+    `before` (an entry_timestamp string from the oldest row already shown)
+    is the "load more" cursor instead: `WHERE CREATEDTIME < :before`, still
+    a single bounded query, no offset involved.
+
+    event_type is a REAL, known limitation, not silently glossed over:
+    it isn't a column, only derivable from response_text's marker prefix, so
+    it filters the already-fetched `limit` rows in Python rather than in the
+    query — a caller asking for one rare event_type can get back fewer than
+    `limit` rows (or zero) even when more exist further back; paging with
+    `before` again re-issues the same bounded query further back in time."""
+    conditions = []
+    if before:
+        conditions.append(f"{settings.AUDIT_LOG_TABLE}.CREATEDTIME < '{zcql_escape(before)}'")
+    if user_id:
+        conditions.append(f"{settings.AUDIT_LOG_TABLE}.user_id = '{zcql_escape(user_id)}'")
+    where_clause = f" WHERE {' AND '.join(conditions)}" if conditions else ""
+    limit = max(1, min(int(limit), 200))
+
+    try:
+        rows = execute_zcql(
+            f"SELECT {settings.AUDIT_LOG_TABLE}.ROWID, {settings.AUDIT_LOG_TABLE}.CREATEDTIME, "
+            f"{settings.AUDIT_LOG_TABLE}.user_id, {settings.AUDIT_LOG_TABLE}.role_name, "
+            f"{settings.AUDIT_LOG_TABLE}.session_id, {settings.AUDIT_LOG_TABLE}.query_text, "
+            f"{settings.AUDIT_LOG_TABLE}.response_text, {settings.AUDIT_LOG_TABLE}.ip_address, "
+            f"{settings.AUDIT_LOG_TABLE}.entry_timestamp "
+            f"FROM {settings.AUDIT_LOG_TABLE}{where_clause} "
+            f"ORDER BY {settings.AUDIT_LOG_TABLE}.CREATEDTIME DESC LIMIT {limit}"
+        )
+    except Exception as e:
+        logger.error(f"Failed to read audit logs: {str(e)}")
+        return []
+
+    results = [_parse_audit_row(r.get(settings.AUDIT_LOG_TABLE, r)) for r in rows]
+    if event_type:
+        results = [r for r in results if r["event_type"] == event_type]
+    return results

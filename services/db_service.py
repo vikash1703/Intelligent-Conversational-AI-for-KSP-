@@ -680,10 +680,23 @@ def get_case_filter_options(station_ids: list[int] | None = None) -> dict:
             unit_rows = execute_zcql(f"SELECT Unit.ROWID, Unit.UnitName, Unit.DistrictID FROM Unit WHERE Unit.ROWID IN ({ids_literal})")
     else:
         unit_rows = execute_zcql("SELECT Unit.ROWID, Unit.UnitName, Unit.DistrictID FROM Unit")
+
+    # Real per-station case counts (added 2026-08-30, Hotspot Map's station
+    # dropdown) — several stations share the exact same UnitName (7 different
+    # "City Police Station" rows, live-verified), so a count is what actually
+    # lets a caller tell them apart in a plain dropdown. One native GROUP BY,
+    # not N+1 queries per station.
+    count_rows = execute_zcql("SELECT CaseMaster.PoliceStationID, COUNT(CaseMaster.ROWID) FROM CaseMaster GROUP BY CaseMaster.PoliceStationID")
+    case_counts = {}
+    for r in count_rows:
+        row = r.get("CaseMaster", r)
+        case_counts[row.get("PoliceStationID")] = int(row.get("COUNT(ROWID)", 0))
+
     stations = [
         {
             "id": r.get("Unit", r)["ROWID"], "name": r.get("Unit", r)["UnitName"],
             "district": district_names.get(r.get("Unit", r).get("DistrictID")),
+            "case_count": case_counts.get(r.get("Unit", r)["ROWID"], 0),
         }
         for r in unit_rows
     ]
@@ -836,6 +849,7 @@ def get_crime_hotspots(
     limit: int = 3000,
     zoom: int | None = None,
     station_ids: list[int] | None = None,
+    police_station_id: int | None = None,
 ) -> list:
     """TTL-cached (see core/ttl_cache) — live-measured at ~3.3s for the default
     (unbucketed) call. GPS points for mapping — one entry per case that has a
@@ -852,11 +866,19 @@ def get_crime_hotspots(
     station_ids (added 2026-08-23, see services/permission_service.
     get_scoped_station_ids): pushed into the WHERE clause like every other
     filter here — @ttl_cached keys on every argument (including this one), so
-    a scoped officer and an unscoped one never share a cached response."""
+    a scoped officer and an unscoped one never share a cached response.
+
+    police_station_id (added 2026-08-30, Hotspot Map's district→station
+    drill-down): an additional caller-chosen narrowing on top of station_ids,
+    same two-filter contract as search_cases'/_build_search_where's own
+    station_ids + police_station_id — never a way to see outside station_ids,
+    only to narrow within it."""
     conditions = ["CaseMaster.latitude IS NOT NULL", "CaseMaster.longitude IS NOT NULL"]
     if station_ids is not None:
         stations_literal = ", ".join(str(int(s)) for s in station_ids) or "0"
         conditions.append(f"CaseMaster.PoliceStationID IN ({stations_literal})")
+    if police_station_id is not None:
+        conditions.append(f"CaseMaster.PoliceStationID = {int(police_station_id)}")
     if crime_major_head_id is not None:
         conditions.append(f"CaseMaster.CrimeMajorHeadID = {int(crime_major_head_id)}")
     if crime_type is not None:

@@ -63,13 +63,15 @@ const NAV_GROUPS = [
     key: "groupAdmin",
     // Admin/DGP only — RolePermission's other 3 real ranks (IGP/SP/
     // Inspector) never see this dropdown at all, not just a disabled one.
-    // "Audit Trail" from the original request is deliberately omitted:
-    // no such page exists in this codebase yet (verified — no route, no
-    // component), so it isn't listed as if it did.
     adminOnly: true,
     items: [
       { to: "/data-quality", key: "dataQuality" },
       { to: "/dataset-notes", key: "datasetNotes" },
+      // Real read path onto AuditLog (added 2026-08-30) — the table was
+      // write-only until now (see services/audit_service.get_audit_logs'
+      // own docstring); server-side gate is the same require_role("Admin",
+      // "DGP") this nav filter mirrors.
+      { to: "/audit-logs", key: "auditLogs" },
     ],
   },
 ];

@@ -22,6 +22,7 @@ import Profile from "./pages/Profile";
 import FirRegistration from "./pages/FirRegistration";
 import Compliance from "./pages/Compliance";
 import ChargesheetManagement from "./pages/ChargesheetManagement";
+import AuditLogs from "./pages/AuditLogs";
 
 function ProtectedRoute({ children }) {
   const { token } = useAuth();
@@ -44,6 +45,7 @@ export default function App() {
       <Route path="/financial-intelligence" element={<ProtectedRoute><FinancialIntelligence /></ProtectedRoute>} />
       <Route path="/data-quality" element={<ProtectedRoute><DataQualitySupervisor /></ProtectedRoute>} />
       <Route path="/dataset-notes" element={<ProtectedRoute><DatasetNotes /></ProtectedRoute>} />
+      <Route path="/audit-logs" element={<ProtectedRoute><AuditLogs /></ProtectedRoute>} />
       <Route path="/custody" element={<ProtectedRoute><CustodyRegistry /></ProtectedRoute>} />
       <Route path="/tray" element={<ProtectedRoute><InvestigationTray /></ProtectedRoute>} />
       <Route path="/briefing" element={<ProtectedRoute><ShiftBriefing /></ProtectedRoute>} />

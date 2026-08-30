@@ -21,6 +21,7 @@ from api.routers.quality import router as quality_router
 from api.routers.custody import router as custody_router
 from api.routers.compliance import router as compliance_router
 from api.routers.chargesheet import router as chargesheet_router
+from api.routers.audit import router as audit_router
 from core.middleware import AuditLogMiddleware
 from core.exceptions import AppException, app_exception_handler
 from chat.answer_cache import prewarm as prewarm_answer_cache
@@ -80,6 +81,7 @@ app.include_router(quality_router, prefix="/api/v1/quality", tags=["Data Quality
 app.include_router(custody_router, prefix="/api/v1/custody", tags=["Custody"])
 app.include_router(compliance_router, prefix="/api/v1/compliance", tags=["Compliance"])
 app.include_router(chargesheet_router, prefix="/api/v1/chargesheet", tags=["Chargesheet Management"])
+app.include_router(audit_router, prefix="/api/v1/audit", tags=["Audit"])
 
 def _prewarm_analytics_caches():
     # Runs on a background thread (see startup event below) so it never delays

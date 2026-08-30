@@ -4,6 +4,22 @@
   flex-direction: column;
 }
 
+/* REAL BUG FIXED 2026-08-30 (live-verified, reported by user): clicking a
+   district on the choropleth drew a blue rectangle around it that looked
+   like a stray selection box. It's not a selection box — Leaflet makes each
+   GeoJSON feature's <path> keyboard-focusable for accessibility, and Chrome
+   draws its default focus ring (outline: auto) around an SVG path's
+   bounding box on click, which for an odd-shaped district reads as a random
+   rectangle rather than an outline hugging its shape. Leaflet's own
+   click/tooltip interaction already gives clear feedback (the tooltip that
+   appears alongside it); this default browser focus ring adds nothing and
+   looks broken, so it's suppressed the way Leaflet's own docs recommend.
+   Keyboard accessibility itself is unaffected — the path remains reachable
+   by Tab, it just no longer draws Chrome's generic rectangle. */
+.leaflet-interactive:focus {
+  outline: none;
+}
+
 .map-header {
   flex: none;
   display: flex;
@@ -64,6 +80,7 @@
 .map-toggle button.active {
   background: var(--accent-fill);
   color: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .25);
 }
 
 /* REAL BUG FIXED 2026-08-24: adding the 4th "Forecast" toggle button pushed
@@ -87,28 +104,260 @@
   .map-toggle button {
     flex-shrink: 0;
   }
+  /* .map-mode-toggle's desktop margin-left:8px (set further down this file,
+     later in source order) would otherwise win over this block's own
+     margin-left:0 and reintroduce the exact 390->476 overflow bug documented
+     above, just on the 2D/3D row instead of the view-toggle row. */
+  .map-mode-toggle {
+    margin-left: 0;
+  }
+  .map-filters {
+    gap: 14px;
+  }
+  .map-filter-summary {
+    margin-left: 0;
+    width: 100%;
+    justify-content: space-between;
+  }
 }
 
-.map-synthetic-note {
-  flex: none;
-  margin: 0;
-  padding: 7px 20px;
-  font-size: 11.5px;
-  line-height: 1.45;
-  color: var(--warn);
+/* Collapsible ⚠️ chip — replaces the old full-width yellow banner (real
+   polish fix, 2026-08-30): the disclosure still exists and is one click
+   away, it just no longer dominates the page by default. */
+.map-synthetic-chip {
+  position: relative;
+}
+
+.map-synthetic-chip-btn {
+  border: 1px solid var(--warn);
   background: var(--warn-bg);
-  border-bottom: 1px solid var(--line);
+  color: var(--warn);
+  font-size: 11px;
+  font-weight: 650;
+  padding: 5px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.map-synthetic-chip-body {
+  position: absolute;
+  z-index: 600;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 320px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 10px 12px;
+}
+
+.map-synthetic-chip-body p {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.map-synthetic-chip-body p + p {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+/* 2D/3D switch (added 2026-08-30) — same pill-toggle look as the existing
+   view toggle so it reads as a sibling control, not a bolted-on extra. */
+.map-mode-toggle {
+  margin-left: 8px;
+}
+
+.map-toggle button:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+.map-3d-canvas {
+  height: 100%;
+  width: 100%;
+}
+
+/* MapLibre's own chrome is a hardcoded light box regardless of app theme —
+   same reasoning as the Leaflet popup override further down. */
+.map-3d-canvas .maplibregl-popup-content {
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12.5px;
+  line-height: 1.5;
+  padding: 8px 10px;
+  box-shadow: var(--shadow);
+}
+
+.map-3d-canvas .maplibregl-popup-tip {
+  border-top-color: var(--surface);
+  border-bottom-color: var(--surface);
+}
+
+.map-3d-canvas .maplibregl-ctrl-attrib {
+  background: rgba(255, 255, 255, .7);
+  font-size: 9.5px;
+}
+
+.map-3d-hint {
+  position: absolute;
+  z-index: 500;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  margin: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+  padding: 5px 14px;
+  font-size: 10.5px;
+  color: var(--muted);
+  white-space: nowrap;
 }
 
 .map-filters {
   flex: none;
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 20px;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 12px 20px;
   border-bottom: 1px solid var(--line);
   background: var(--surface-2);
+}
+
+/* Grouped filter panel redesign (2026-08-30) — each facet (location, crime
+   type, status, date) now reads as its own labeled block instead of one flat
+   row of controls with no hierarchy; nothing removed, purely a layout/label
+   pass over the same filters. */
+.map-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.map-filter-group-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.map-filter-group-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.map-filter-group-links {
+  display: flex;
+  gap: 8px;
+}
+
+.map-filter-group-links button {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.map-filter-group-body {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.map-filter-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  align-self: center;
+}
+
+.map-active-count {
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--accent);
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+
+/* Location group's district/station selects — folded into .map-filters'
+   own grouped layout (2026-08-30 filter redesign); the standalone
+   .map-location-filters row this used to be lived directly above the map. */
+.map-filter-group-body select {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+  padding: 6px 9px;
+  border-radius: 7px;
+  max-width: 220px;
+}
+
+.map-station-summary {
+  position: absolute;
+  z-index: 500;
+  top: 12px;
+  right: 10px;
+  max-width: 260px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 10px 12px;
+}
+
+.map-station-summary-title {
+  margin: 0 0 4px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.map-station-summary-breakdown {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.map-station-summary-loading {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.map-forecast-methodology {
+  position: absolute;
+  z-index: 500;
+  left: 10px;
+  top: 10px;
+  max-width: 300px;
+  margin: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 8px 10px;
+  font-size: 10.5px;
+  line-height: 1.45;
+  color: var(--muted);
 }
 
 .map-filter-types {
@@ -118,6 +367,9 @@
 }
 
 .map-type-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border: 1px solid var(--line);
   background: var(--surface);
   color: var(--muted);
@@ -129,35 +381,43 @@
   transition: background .12s ease, color .12s ease, border-color .12s ease, opacity .12s ease;
 }
 
+.map-chip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+
 /* Selected vs unselected need to read as clearly different states at a
    glance, not just a faint border-color shift — active is a solid filled
-   pill; inactive is dimmed and its border fades toward the background so it
-   visibly recedes rather than looking "active but slightly different". */
+   pill in that filter's OWN color (2026-08-30: crime type/status now each
+   carry a real, stable color — see CRIME_TYPE_PALETTE/STATUS_COLOR — instead
+   of every chip turning the same generic navy); inactive is dimmed and its
+   border fades toward the background so it visibly recedes rather than
+   looking "active but slightly different". The colored dot stays visible on
+   BOTH states so a type/status is still identifiable before you toggle it. */
 .map-type-chip.active {
-  background: var(--accent-fill);
-  border-color: var(--accent-fill);
+  background: var(--chip-color, var(--accent-fill));
+  border-color: var(--chip-color, var(--accent-fill));
   color: #fff;
   opacity: 1;
+}
+
+.map-type-chip.active .map-chip-dot {
+  background: #fff !important;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .25) inset;
 }
 
 .map-type-chip.inactive {
   background: transparent;
   border-color: var(--line);
   color: var(--muted);
-  opacity: .55;
+  opacity: .7;
 }
 
 .map-type-chip.inactive:hover {
-  opacity: .85;
-  border-color: var(--accent);
-}
-
-.map-type-chip-utility {
-  background: var(--surface);
-  color: var(--accent);
-  border-color: var(--accent);
-  font-weight: 700;
   opacity: 1;
+  border-color: var(--chip-color, var(--accent));
 }
 
 .map-filter-date {
@@ -280,6 +540,33 @@
   color: var(--muted);
 }
 
+/* Points view's crime-type key (2026-08-30) — pairs with the per-type marker
+   coloring above; without this a colored dot on the map can't be identified. */
+.map-legend-crimetype {
+  right: auto;
+  left: 10px;
+}
+
+.map-legend-type-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.map-legend-type-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.map-legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: none;
+}
+
 .map-missing-districts-note {
   position: absolute;
   z-index: 500;
@@ -295,16 +582,6 @@
   font-size: 10.5px;
   line-height: 1.4;
   color: var(--muted);
-}
-
-/* Leaflet renders raster map tiles, which stay light regardless of the app's
-   own theme — inverting + hue-rotating them is the standard trick to get a
-   legible dark map without depending on a second external tile provider.
-   Scoped to the tile layer's own container (via TileLayer's className option)
-   so markers/popups/heat canvas/cluster badges on the panes above it are
-   never affected — only the raw map imagery underneath is recolored. */
-.map-tiles-dark {
-  filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9);
 }
 
 /* Leaflet's default popup chrome is a hardcoded white box regardless of
